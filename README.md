@@ -34,7 +34,8 @@ Then visit `http://localhost:8000`.
 6. Select the `main` branch and the `/ (root)` folder, then click **Save**.
 7. Wait a minute or two. GitHub will show the published address, usually:
    `https://YOUR-USERNAME.github.io/csp-scheduling-game/`
-8. Share that address with students or place it in Canvas.
+   In my case, the url is: https://susanzehra.github.io/csp-scheduling-game
+9. Share that address with students or place it in Canvas.
 
 ## Important note about completion records
 
