@@ -138,10 +138,10 @@ function evaluate(assignments) {
   const complete = Object.keys(assignments).length === 4;
   return {
     complete,
-    A: complete && assignments.A !== 4,
-    B: complete && [1, 2].includes(assignments.B),
-    C: complete && assignments.C !== 1,
-    D: complete && assignments.D > assignments.A
+    A: complete && [2, 3].includes(assignments.A),
+    C: complete && assignments.C + 1 === assignments.A,
+    D: complete && assignments.D < assignments.A,
+    B: complete && Math.abs(assignments.B - assignments.D) > 1
   };
 }
 

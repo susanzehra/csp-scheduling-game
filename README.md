@@ -34,8 +34,7 @@ Then visit `http://localhost:8000`.
 6. Select the `main` branch and the `/ (root)` folder, then click **Save**.
 7. Wait a minute or two. GitHub will show the published address, usually:
    `https://YOUR-USERNAME.github.io/csp-scheduling-game/`
-   In my case, the url is: https://susanzehra.github.io/csp-scheduling-game
-9. Share that address with students or place it in Canvas.
+8. Share that address with students or place it in Canvas.
 
 ## Important note about completion records
 
@@ -48,7 +47,9 @@ Edit the rule text in `index.html`, then update the matching conditions in the `
 ## Current valid-schedule rules
 
 - Use each employee exactly once.
-- A cannot work Shift 4.
-- B must work Shift 1 or Shift 2.
-- C cannot work Shift 1.
-- D must work a later shift than A.
+- A must work a middle shift—not Shift 1 or Shift 4.
+- C must work immediately before A.
+- D must work earlier than A.
+- B and D cannot work adjacent shifts.
+
+These rules have one valid schedule: **D→1, C→2, A→3, B→4**. The solution is intentionally not alphabetical, so students must reason about how the constraints interact.

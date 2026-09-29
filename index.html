@@ -58,10 +58,10 @@
           <h2>Rules to satisfy</h2>
           <ul id="constraintList" class="constraint-list">
             <li data-rule="complete"><span class="rule-icon">○</span>Use each employee exactly once.</li>
-            <li data-rule="A"><span class="rule-icon">○</span>Employee A cannot work Shift 4.</li>
-            <li data-rule="B"><span class="rule-icon">○</span>Employee B must work Shift 1 or Shift 2.</li>
-            <li data-rule="C"><span class="rule-icon">○</span>Employee C cannot work Shift 1.</li>
-            <li data-rule="D"><span class="rule-icon">○</span>Employee D must work a later shift than Employee A.</li>
+            <li data-rule="A"><span class="rule-icon">○</span>Employee A must work a middle shift—not Shift 1 or Shift 4.</li>
+            <li data-rule="C"><span class="rule-icon">○</span>Employee C must work immediately before Employee A.</li>
+            <li data-rule="D"><span class="rule-icon">○</span>Employee D must work earlier than Employee A.</li>
+            <li data-rule="B"><span class="rule-icon">○</span>Employees B and D cannot work adjacent shifts.</li>
           </ul>
           <div class="tip-box"><strong>CSP idea:</strong> employees are variables, shifts are domain values, and the rules are constraints.</div>
         </section>
