@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "csp-scheduling-game-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-29",
+  "vars": {
+    "ALLOWED_ORIGIN": "https://YOUR-USERNAME.github.io"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "csp-scheduling-game-db",
+      "database_id": "PASTE_DATABASE_ID_HERE"
+    }
+  ]
+}

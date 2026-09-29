@@ -14,6 +14,10 @@
         <p class="eyebrow">CS 480/580 • Constraint Satisfaction Problems</p>
         <h1>CSP Scheduling Challenge</h1>
         <p class="subtitle">Build a legal call-center schedule by satisfying every constraint.</p>
+        <div class="public-stats" aria-label="Game activity counters">
+          <span><strong id="visitCount">—</strong> visitors</span>
+          <span><strong id="playCount">—</strong> successful completions</span>
+        </div>
       </div>
       <div class="hero-doodle" aria-hidden="true">🧩</div>
     </header>
@@ -30,6 +34,11 @@
           <input id="studentName" name="studentName" type="text" maxlength="60" autocomplete="name" placeholder="Type your full name" required>
           <button class="primary-button" type="submit">Start Challenge →</button>
         </div>
+        <label class="consent-row" for="consentCheckbox">
+          <input id="consentCheckbox" type="checkbox" required>
+          <span>I consent to having my name, completion date/time, elapsed time, and final schedule recorded for this course activity. These details will be encrypted in my browser before being sent. The site also uses a random anonymous browser ID to estimate unique visitors.</span>
+        </label>
+        <p class="privacy-note"><strong>Privacy:</strong> The public page displays only total counts. Student names and completion details are never displayed publicly and cannot be decrypted without the instructor’s offline private key.</p>
         <p id="nameError" class="form-error" role="alert"></p>
       </form>
     </section>
@@ -44,8 +53,8 @@
       <section class="panel scenario-panel">
         <div class="scenario-text">
           <span class="step-label">Real-world scenario</span>
-          <h2>Staff the four call-center shifts</h2>
-          <p>A call center has four employees—<strong>A, B, C, and D</strong>—and four daily shifts. Assign each employee to exactly one shift while obeying all rules.</p>
+          <h2>Staff the five call-center shifts</h2>
+          <p>A call center has five employees—<strong>A, B, C, D, and E</strong>—and five daily shifts. Assign each employee to exactly one shift while obeying all rules. Several rules depend on one another, so test your choices carefully.</p>
         </div>
         <div class="mini-flow" aria-label="Employees are assigned to legal shifts">
           <span>Employees</span><b>→</b><span>Rules</span><b>→</b><span>Schedule</span>
@@ -58,10 +67,12 @@
           <h2>Rules to satisfy</h2>
           <ul id="constraintList" class="constraint-list">
             <li data-rule="complete"><span class="rule-icon">○</span>Use each employee exactly once.</li>
-            <li data-rule="A"><span class="rule-icon">○</span>Employee A must work a middle shift—not Shift 1 or Shift 4.</li>
+            <li data-rule="A"><span class="rule-icon">○</span>Employee A must work a middle shift—Shift 2, 3, or 4.</li>
             <li data-rule="C"><span class="rule-icon">○</span>Employee C must work immediately before Employee A.</li>
-            <li data-rule="D"><span class="rule-icon">○</span>Employee D must work earlier than Employee A.</li>
-            <li data-rule="B"><span class="rule-icon">○</span>Employees B and D cannot work adjacent shifts.</li>
+            <li data-rule="D"><span class="rule-icon">○</span>Employee D must work earlier than Employee C.</li>
+            <li data-rule="B"><span class="rule-icon">○</span>Employee B must work later than Employee A.</li>
+            <li data-rule="E"><span class="rule-icon">○</span>Employee E must work earlier than Employee B.</li>
+            <li data-rule="adjacent"><span class="rule-icon">○</span>Employees D and E cannot work adjacent shifts.</li>
           </ul>
           <div class="tip-box"><strong>CSP idea:</strong> employees are variables, shifts are domain values, and the rules are constraints.</div>
         </section>
@@ -82,6 +93,7 @@
               <button class="employee-card card-b" draggable="true" data-employee="B" type="button" aria-label="Employee B">B<span>Employee B</span></button>
               <button class="employee-card card-c" draggable="true" data-employee="C" type="button" aria-label="Employee C">C<span>Employee C</span></button>
               <button class="employee-card card-d" draggable="true" data-employee="D" type="button" aria-label="Employee D">D<span>Employee D</span></button>
+              <button class="employee-card card-e" draggable="true" data-employee="E" type="button" aria-label="Employee E">E<span>Employee E</span></button>
             </div>
           </div>
 
@@ -90,11 +102,12 @@
             <div class="shift-slot drop-zone" data-shift="2" tabindex="0"><div class="shift-number">2</div><div class="slot-content">Drop employee here</div><small>Midday</small></div>
             <div class="shift-slot drop-zone" data-shift="3" tabindex="0"><div class="shift-number">3</div><div class="slot-content">Drop employee here</div><small>Afternoon</small></div>
             <div class="shift-slot drop-zone" data-shift="4" tabindex="0"><div class="shift-number">4</div><div class="slot-content">Drop employee here</div><small>Evening</small></div>
+            <div class="shift-slot drop-zone" data-shift="5" tabindex="0"><div class="shift-number">5</div><div class="slot-content">Drop employee here</div><small>Night</small></div>
           </div>
 
           <p class="accessibility-note">Tip: You may also click an employee, then click a shift.</p>
           <button id="checkButton" class="primary-button check-button" type="button">Check My Schedule</button>
-          <div id="feedback" class="feedback" role="status" aria-live="polite">Assign all four employees, then check your schedule.</div>
+          <div id="feedback" class="feedback" role="status" aria-live="polite">Assign all five employees, then check your schedule.</div>
         </section>
       </div>
     </section>
@@ -114,6 +127,7 @@
           <div><span>Schedule</span><strong id="finalSchedule"></strong></div>
         </div>
         <p class="certificate-note">Every variable has a value, and every constraint is satisfied.</p>
+        <p id="recordStatus" class="record-status"></p>
       </div>
       <div class="success-actions">
         <button id="printButton" class="primary-button" type="button">Print / Save as PDF</button>
@@ -121,6 +135,7 @@
       </div>
     </section>
   </main>
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
