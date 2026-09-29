@@ -100,6 +100,8 @@ You need a free Cloudflare account and Node.js installed.
    `https://YOUR-USERNAME.github.io/csp-scheduling-game/`
 8. Share that address with students or place it in Canvas.
 
+After uploading an updated version, allow GitHub Pages a minute or two to redeploy. If an older version still appears, use a hard refresh (`Ctrl+Shift+R` on Windows or `Cmd+Shift+R` on macOS). The included version query strings also force browsers to retrieve the current five-employee files.
+
 ## Download the encrypted completion file
 
 Run the following command, replacing the URL and token. The downloaded file contains ciphertext, not readable student names.
