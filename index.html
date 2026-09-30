@@ -3,274 +3,173 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A three-part interactive constraint satisfaction challenge for introductory AI students.">
-  <title>Three-Part CSP Challenge</title>
-  <link rel="stylesheet" href="style.css?v=20260930-8">
+  <meta name="description" content="An interactive drag-and-drop introduction to the Minimax algorithm.">
+  <title>Susan Zehra's Minimax Strategy Challenge</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="page-shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">CS 480/580 • Constraint Satisfaction Problems</p>
-        <h1>Three-Part CSP Challenge</h1>
-        <p class="subtitle">Solve two map-coloring problems and one employee-scheduling problem.</p>
-      </div>
-      <div class="hero-doodle" aria-hidden="true">🧩</div>
-    </header>
+  <header class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Interactive AI Decision Game</p>
+      <h1>Susan Zehra’s<br><span>Minimax Strategy Challenge</span></h1>
+      <p>Think ahead, assume a smart opponent, and choose the move with the best guaranteed outcome.</p>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="root-bubble">MAX</div>
+      <div class="branch one"></div><div class="branch two"></div>
+      <div class="mini-bubble left">MIN</div><div class="mini-bubble right">MIN</div>
+    </div>
+  </header>
 
-    <section id="welcomeScreen" class="panel welcome-panel">
-      <div class="welcome-copy">
-        <span class="step-label">Before you begin</span>
-        <h2>Enter your name</h2>
-        <p>Your name will appear on the completion screen after you solve all three CSPs.</p>
-      </div>
-      <form id="nameForm" class="name-form">
+  <main>
+    <section id="welcome" class="card welcome-card">
+      <span class="kicker">Before you begin</span>
+      <h2>Enter your name</h2>
+      <p>Your name will appear on your completion certificate.</p>
+      <form id="nameForm">
+        <label for="studentName">Name</label>
         <div class="name-row">
-          <input id="studentName" name="studentName" type="text" maxlength="60" autocomplete="name" placeholder="Type your full name" required>
-          <button id="startButton" class="primary-button" type="submit">Start Challenge →</button>
+          <input id="studentName" maxlength="70" autocomplete="name" placeholder="Enter your full name" required>
+          <button class="primary" type="submit">Start Challenge →</button>
         </div>
-        <p class="privacy-note"><strong>Privacy:</strong> Nothing is stored or transmitted. Your name is used only in this browser to personalize the completion certificate.</p>
-        <p id="nameError" class="form-error" role="alert"></p>
+        <p id="nameError" class="error" role="alert"></p>
       </form>
+      <p class="privacy"><strong>Privacy:</strong> Nothing is stored or transmitted. Your name is used only in this browser to personalize the completion certificate.</p>
     </section>
 
-    <section id="gameScreen" class="game-screen" hidden>
-      <div class="status-strip">
-        <div><span class="status-label">Student</span><strong id="playerName"></strong></div>
-        <div><span class="status-label">Progress</span><strong id="questionProgress">Question 1 of 3</strong></div>
-        <div><span class="status-label">Elapsed time</span><strong id="timer">00:00</strong></div>
-        <div><span class="status-label">Checks</span><strong id="attemptCount">0</strong></div>
+    <section id="game" hidden>
+      <div class="progress-card">
+        <div><span id="progressText">Question 1 of 3</span><strong id="playerGreeting"></strong></div>
+        <div class="progress-track"><div id="progressBar"></div></div>
       </div>
 
-      <section id="schedulingQuestion" class="question-section" hidden>
-      <section class="panel scenario-panel">
-        <div class="scenario-text">
-          <span class="step-label">Question 3 • Scheduling</span>
-          <h2>Staff the five call-center shifts</h2>
-          <p>A call center has five employees—<strong>A, B, C, D, and E</strong>—and five daily shifts. Assign each employee to exactly one shift while obeying all rules. Several rules depend on one another, so test your choices carefully.</p>
+      <section id="question1" class="question">
+        <div class="scenario card">
+          <div><span class="kicker coral">Question 1 · Know the players</span><h2>Who chooses at each level?</h2>
+          <p>In Minimax, the players alternate turns. Drag the three labels to the correct levels of the game tree.</p></div>
+          <div class="formula"><b>MAX</b> wants ↑<br><b>MIN</b> wants ↓</div>
         </div>
-        <div class="mini-flow" aria-label="Employees are assigned to legal shifts">
-          <span>Employees</span><b>→</b><span>Rules</span><b>→</b><span>Schedule</span>
-        </div>
-      </section>
 
-      <div class="game-grid">
-        <section class="panel rules-panel">
-          <span class="step-label orange">Constraints</span>
-          <h2>Rules to satisfy</h2>
-          <ul id="constraintList" class="constraint-list">
-            <li data-rule="complete"><span class="rule-icon">○</span>Use each employee exactly once.</li>
-            <li data-rule="A"><span class="rule-icon">○</span>Employee A must work a middle shift—Shift 2, 3, or 4.</li>
-            <li data-rule="C"><span class="rule-icon">○</span>Employee C must work immediately before Employee A.</li>
-            <li data-rule="D"><span class="rule-icon">○</span>Employee D must work earlier than Employee C.</li>
-            <li data-rule="B"><span class="rule-icon">○</span>Employee B must work later than Employee A.</li>
-            <li data-rule="E"><span class="rule-icon">○</span>Employee E must work earlier than Employee B.</li>
-            <li data-rule="adjacent"><span class="rule-icon">○</span>Employees D and E cannot work adjacent shifts.</li>
-          </ul>
-          <div class="tip-box"><strong>CSP idea:</strong> employees are variables, shifts are domain values, and the rules are constraints.</div>
-        </section>
-
-        <section class="panel workspace-panel">
-          <div class="workspace-heading">
-            <div>
-              <span class="step-label green">Your task</span>
-              <h2>Drag employees into shifts</h2>
-            </div>
-            <button id="resetButton" class="text-button" type="button">↻ Reset</button>
-          </div>
-
-          <div id="employeeBank" class="employee-bank drop-zone" aria-label="Unassigned employees">
-            <p class="bank-label">Unassigned employees</p>
-            <div class="bank-cards">
-              <button class="employee-card card-a" draggable="true" data-employee="A" type="button" aria-label="Employee A">A<span>Employee A</span></button>
-              <button class="employee-card card-b" draggable="true" data-employee="B" type="button" aria-label="Employee B">B<span>Employee B</span></button>
-              <button class="employee-card card-c" draggable="true" data-employee="C" type="button" aria-label="Employee C">C<span>Employee C</span></button>
-              <button class="employee-card card-d" draggable="true" data-employee="D" type="button" aria-label="Employee D">D<span>Employee D</span></button>
-              <button class="employee-card card-e" draggable="true" data-employee="E" type="button" aria-label="Employee E">E<span>Employee E</span></button>
-            </div>
-          </div>
-
-          <div class="shift-board">
-            <div class="shift-slot drop-zone" data-shift="1" tabindex="0"><div class="shift-number">1</div><div class="slot-content">Drop employee here</div><small>Morning</small></div>
-            <div class="shift-slot drop-zone" data-shift="2" tabindex="0"><div class="shift-number">2</div><div class="slot-content">Drop employee here</div><small>Midday</small></div>
-            <div class="shift-slot drop-zone" data-shift="3" tabindex="0"><div class="shift-number">3</div><div class="slot-content">Drop employee here</div><small>Afternoon</small></div>
-            <div class="shift-slot drop-zone" data-shift="4" tabindex="0"><div class="shift-number">4</div><div class="slot-content">Drop employee here</div><small>Evening</small></div>
-            <div class="shift-slot drop-zone" data-shift="5" tabindex="0"><div class="shift-number">5</div><div class="slot-content">Drop employee here</div><small>Night</small></div>
-          </div>
-
-          <p class="accessibility-note">Tip: You may also click an employee, then click a shift.</p>
-          <button id="checkButton" class="primary-button check-button" type="button">Check My Schedule</button>
-          <div id="feedback" class="feedback" role="status" aria-live="polite">Assign all five employees, then check your schedule.</div>
-        </section>
-      </div>
-      </section>
-
-      <section id="mapQuestion" class="question-section">
-        <section class="panel scenario-panel">
-          <div class="scenario-text">
-            <span class="step-label">Question 1 • Map coloring</span>
-            <h2>Color the regions of Australia</h2>
-            <p>A map designer needs to color Australia so neighboring regions are easy to distinguish. Assign one of three colors to every region. Regions that share a land border must have different colors.</p>
-          </div>
-          <div class="mini-flow" aria-label="Regions receive colors that satisfy border constraints">
-            <span>Regions</span><b>→</b><span>Border rules</span><b>→</b><span>Valid map</span>
-          </div>
-        </section>
-
-        <div class="game-grid map-game-grid">
-          <section class="panel rules-panel">
-            <span class="step-label orange">Constraints</span>
-            <h2>Map rules</h2>
-            <ul class="constraint-list map-rule-list">
-              <li><span class="rule-icon">○</span>Color all seven regions.</li>
-              <li><span class="rule-icon">○</span>Use only red, green, or blue.</li>
-              <li><span class="rule-icon">○</span>Regions sharing a land border cannot use the same color.</li>
-              <li><span class="rule-icon">○</span>Tasmania has no land border with another region, so it may use any color.</li>
+        <div class="activity-grid">
+          <aside class="card lesson">
+            <h3>Quick concept review</h3>
+            <ul>
+              <li><b>MAX</b> chooses the largest available value.</li>
+              <li><b>MIN</b> represents a rational opponent and chooses the smallest value.</li>
+              <li><b>Terminal nodes</b> contain final utility scores.</li>
+              <li>Values are evaluated from the bottom upward.</li>
             </ul>
-            <div class="tip-box"><strong>CSP idea:</strong> regions are variables, colors are domain values, and shared borders create constraints.</div>
-          </section>
-
-          <section class="panel workspace-panel map-workspace">
-            <div class="workspace-heading">
-              <div>
-                <span class="step-label green">Your task</span>
-                <h2>Color the map</h2>
-              </div>
-              <button id="resetMapButton" class="text-button" type="button">↻ Reset Map</button>
+            <div class="tip">A larger utility is better for MAX. A smaller utility is better for MIN.</div>
+          </aside>
+          <div class="card workspace">
+            <div class="token-bank" data-bank="q1">
+              <button class="drag-token blue" draggable="true" data-value="MAX">MAX player</button>
+              <button class="drag-token orange" draggable="true" data-value="MIN">MIN player</button>
+              <button class="drag-token green" draggable="true" data-value="TERMINAL">Terminal utilities</button>
             </div>
-
-            <p class="palette-label">Choose or drag a color:</p>
-            <div class="color-palette" role="group" aria-label="Map colors">
-              <button class="color-swatch swatch-red" draggable="true" data-color="red" type="button"><span></span>Red</button>
-              <button class="color-swatch swatch-green" draggable="true" data-color="green" type="button"><span></span>Green</button>
-              <button class="color-swatch swatch-blue" draggable="true" data-color="blue" type="button"><span></span>Blue</button>
+            <div class="level-tree">
+              <div class="level"><span>Root level</span><div class="drop-slot" data-answer="MAX">Drop label</div></div>
+              <div class="connector">╱ &nbsp; ╲</div>
+              <div class="level middle"><span>Opponent’s level</span><div class="drop-slot" data-answer="MIN">Drop label</div></div>
+              <div class="connector">╱ ╲ &nbsp;&nbsp; ╱ ╲</div>
+              <div class="level"><span>End of search</span><div class="drop-slot" data-answer="TERMINAL">Drop label</div></div>
             </div>
-
-            <div class="map-frame">
-              <svg class="australia-map" viewBox="0 0 660 500" role="img" aria-labelledby="mapTitle mapDescription">
-                <title id="mapTitle">Simplified political map of Australia</title>
-                <desc id="mapDescription">Interactive regions for Western Australia, Northern Territory, South Australia, Queensland, New South Wales, Victoria, and Tasmania.</desc>
-                <g class="map-region" data-region="WA" tabindex="0" role="button" aria-label="Western Australia, not colored"><polygon points="40,120 225,75 245,220 245,350 95,390 45,320"></polygon></g>
-                <g class="map-region" data-region="NT" tabindex="0" role="button" aria-label="Northern Territory, not colored"><polygon points="225,75 390,65 390,220 245,220"></polygon></g>
-                <g class="map-region" data-region="SA" tabindex="0" role="button" aria-label="South Australia, not colored"><polygon points="245,220 390,220 455,240 455,330 245,350"></polygon></g>
-                <g class="map-region" data-region="QLD" tabindex="0" role="button" aria-label="Queensland, not colored"><polygon points="390,65 535,90 610,225 455,240 390,220"></polygon></g>
-                <g class="map-region" data-region="NSW" tabindex="0" role="button" aria-label="New South Wales, not colored"><polygon points="455,240 610,225 590,340 470,350 455,330"></polygon></g>
-                <g class="map-region" data-region="VIC" tabindex="0" role="button" aria-label="Victoria, not colored"><polygon points="455,330 470,350 590,340 535,405 480,390"></polygon></g>
-                <g class="map-region" data-region="TAS" tabindex="0" role="button" aria-label="Tasmania, not colored"><polygon points="495,430 555,438 540,480 500,475"></polygon></g>
-                <g class="map-labels" aria-hidden="true">
-                  <text x="132" y="245">WA</text><text x="302" y="155">NT</text><text x="333" y="294">SA</text>
-                  <text x="490" y="163">QLD</text><text x="527" y="294">NSW</text><text x="520" y="374">VIC</text><text x="525" y="463">TAS</text>
-                </g>
-              </svg>
-            </div>
-            <p class="accessibility-note">Tip: Click a color and then a region, or drag a color onto a region.</p>
-            <button id="checkMapButton" class="primary-button check-button" type="button">Check My Map</button>
-            <div id="mapFeedback" class="feedback" role="status" aria-live="polite">Color all seven regions, then check your map.</div>
-          </section>
+            <div class="actions"><button class="secondary reset" data-question="1">Reset</button><button id="checkQ1" class="primary">Check Answer</button></div>
+            <p id="feedback1" class="feedback" role="status">Drag each label to a tree level. You can also click a label and then click a slot.</p>
+          </div>
         </div>
       </section>
 
-      <section id="districtQuestion" class="question-section" hidden>
-        <section class="panel scenario-panel">
-          <div class="scenario-text">
-            <span class="step-label">Question 2 • Advanced map coloring</span>
-            <h2>Color the emergency-response districts</h2>
-            <p>A regional emergency-management office divides a service area into eight connected districts. Its map must satisfy border rules, fixed operational colors, prohibited colors, and one shared-color requirement. Several choices that look valid at first will create a conflict later, so plan before checking your map.</p>
-          </div>
-          <div class="mini-flow" aria-label="Emergency districts receive colors that satisfy border constraints">
-            <span>8 districts</span><b>→</b><span>More borders</span><b>→</b><span>Valid map</span>
-          </div>
-        </section>
-
-        <div class="game-grid map-game-grid">
-          <section class="panel rules-panel">
-            <span class="step-label orange">Constraints</span>
-            <h2>District-map rules</h2>
-            <ul class="constraint-list map-rule-list">
-              <li><span class="rule-icon">○</span>Color all eight districts.</li>
-              <li><span class="rule-icon">○</span>Use only red, green, blue, or orange.</li>
-              <li><span class="rule-icon">○</span>Districts sharing a border cannot use the same color.</li>
-              <li><span class="rule-icon">○</span>The central district borders every outer district.</li>
-              <li><span class="rule-icon">○</span>Each outer district also borders the outer district on either side.</li>
-              <li><span class="rule-icon">○</span>Central District C must be orange.</li>
-              <li><span class="rule-icon">○</span>East District E must be blue.</li>
-              <li><span class="rule-icon">○</span>Northwest District NW must use the same color as East District E.</li>
-              <li><span class="rule-icon">○</span>North District N cannot be red.</li>
-              <li><span class="rule-icon">○</span>West District W cannot be green.</li>
-              <li><span class="rule-icon">○</span>South District S cannot be green.</li>
-              <li><span class="rule-icon">○</span>Southwest District SW cannot be blue.</li>
-            </ul>
-            <div class="tip-box"><strong>Strategy:</strong> begin with C and E. Then use the NW–E relationship and the prohibited colors to infer the remaining districts. You may need to backtrack if an early choice blocks a later district.</div>
-          </section>
-
-          <section class="panel workspace-panel map-workspace">
-            <div class="workspace-heading">
-              <div>
-                <span class="step-label green">Your task</span>
-                <h2>Color the service-area map</h2>
+      <section id="question2" class="question" hidden>
+        <div class="scenario card">
+          <div><span class="kicker purple">Question 2 · Back up the values</span><h2>Evaluate a small game tree</h2>
+          <p>Work from the leaves upward. MIN evaluates each branch first; then MAX chooses between the backed-up results.</p></div>
+          <div class="formula">MIN first<br>then MAX</div>
+        </div>
+        <div class="activity-grid">
+          <aside class="card lesson">
+            <h3>What the tree means</h3>
+            <p>MAX chooses between <b>Plan A</b> and <b>Plan B</b>. MIN then selects the least favorable outcome for MAX.</p>
+            <ol>
+              <li>Find the minimum under Plan A.</li>
+              <li>Find the minimum under Plan B.</li>
+              <li>At the root, choose the maximum of those results.</li>
+            </ol>
+          </aside>
+          <div class="card workspace">
+            <div class="token-bank" data-bank="q2">
+              <button class="drag-token blue" draggable="true" data-value="ROOT4">Root MAX = 4</button>
+              <button class="drag-token orange" draggable="true" data-value="LEFT2">Plan A MIN = 2</button>
+              <button class="drag-token orange" draggable="true" data-value="RIGHT4">Plan B MIN = 4</button>
+            </div>
+            <div class="game-tree simple-tree">
+              <div class="tree-root"><b>MAX</b><div class="drop-slot compact" data-answer="ROOT4">Value?</div></div>
+              <svg viewBox="0 0 600 115" aria-hidden="true"><path d="M300 5 L155 105 M300 5 L445 105"/></svg>
+              <div class="tree-branches">
+                <div class="branch-group"><h4>Plan A · MIN</h4><div class="drop-slot compact" data-answer="LEFT2">Value?</div><div class="leaves"><span>6</span><span>2</span></div></div>
+                <div class="branch-group"><h4>Plan B · MIN</h4><div class="drop-slot compact" data-answer="RIGHT4">Value?</div><div class="leaves"><span>4</span><span>8</span></div></div>
               </div>
-              <button id="resetDistrictButton" class="text-button" type="button">↻ Reset Map</button>
             </div>
+            <div class="actions"><button class="secondary reset" data-question="2">Reset</button><button id="checkQ2" class="primary">Check Answer</button></div>
+            <p id="feedback2" class="feedback" role="status">Place the two MIN results before placing the MAX result.</p>
+          </div>
+        </div>
+      </section>
 
-            <p class="palette-label">Choose or drag a color:</p>
-            <div class="color-palette" role="group" aria-label="District-map colors">
-              <button class="district-color-swatch swatch-red" draggable="true" data-color="red" type="button"><span></span>Red</button>
-              <button class="district-color-swatch swatch-green" draggable="true" data-color="green" type="button"><span></span>Green</button>
-              <button class="district-color-swatch swatch-blue" draggable="true" data-color="blue" type="button"><span></span>Blue</button>
-              <button class="district-color-swatch swatch-orange" draggable="true" data-color="orange" type="button"><span></span>Orange</button>
+      <section id="question3" class="question" hidden>
+        <div class="scenario card">
+          <div><span class="kicker green-text">Question 3 · Play against Minimax</span><h2>The Power-Cell Takeaway Game</h2>
+          <p>You are MAX. The computer is MIN. Take turns removing power cells and try to collect the final cell—but remember that the computer looks ahead before making every move.</p></div>
+          <div class="formula">7 cells<br>Take 1 or 2</div>
+        </div>
+        <div class="activity-grid wide-lesson">
+          <aside class="card lesson">
+            <h3>Rules</h3>
+            <ol>
+              <li>The game begins with <b>seven power cells</b>.</li>
+              <li>You and the computer alternate turns.</li>
+              <li>On each turn, remove exactly <b>one or two</b> cells.</li>
+              <li>The player who takes the <b>final cell wins</b>.</li>
+            </ol>
+            <div class="tip"><strong>Minimax connection:</strong> the computer examines future moves and chooses the response that gives you the worst possible outcome.</div>
+          </aside>
+          <div class="card workspace">
+            <div class="power-header">
+              <div><span>Cells remaining</span><strong id="remainingCount">7</strong></div>
+              <div><span>Current turn</span><strong id="turnLabel">Your turn · MAX</strong></div>
             </div>
-
-            <div class="map-frame district-map-frame">
-              <svg class="australia-map district-map" viewBox="0 0 660 510" role="img" aria-labelledby="districtMapTitle districtMapDescription">
-                <title id="districtMapTitle">Eight connected emergency-response districts</title>
-                <desc id="districtMapDescription">Seven outer districts form a ring around one central district. The central district shares a border with every outer district.</desc>
-                <g class="district-region" data-district="NW" tabindex="0" role="button" aria-label="Northwest district, not colored"><polygon points="70,120 250,45 300,130 215,175"></polygon></g>
-                <g class="district-region" data-district="N" tabindex="0" role="button" aria-label="North district, not colored"><polygon points="250,45 500,60 430,150 300,130"></polygon></g>
-                <g class="district-region" data-district="NE" tabindex="0" role="button" aria-label="Northeast district, not colored"><polygon points="500,60 620,230 475,250 430,150"></polygon></g>
-                <g class="district-region" data-district="E" tabindex="0" role="button" aria-label="East district, not colored"><polygon points="620,230 540,420 410,340 475,250"></polygon></g>
-                <g class="district-region" data-district="S" tabindex="0" role="button" aria-label="South district, not colored"><polygon points="540,420 300,470 290,360 410,340"></polygon></g>
-                <g class="district-region" data-district="SW" tabindex="0" role="button" aria-label="Southwest district, not colored"><polygon points="300,470 70,380 185,280 290,360"></polygon></g>
-                <g class="district-region" data-district="W" tabindex="0" role="button" aria-label="West district, not colored"><polygon points="70,380 70,120 215,175 185,280"></polygon></g>
-                <g class="district-region central-region" data-district="C" tabindex="0" role="button" aria-label="Central district, not colored"><polygon points="215,175 300,130 430,150 475,250 410,340 290,360 185,280"></polygon></g>
-                <g class="map-labels" aria-hidden="true">
-                  <text x="185" y="105">NW</text><text x="365" y="91">N</text><text x="525" y="155">NE</text>
-                  <text x="535" y="300">E</text><text x="400" y="411">S</text><text x="195" y="388">SW</text>
-                  <text x="120" y="250">W</text><text x="330" y="250">C</text>
-                </g>
-              </svg>
+            <div id="powerCells" class="power-cells" aria-label="Seven power cells remaining"></div>
+            <p class="move-instruction">Drag a move into the MAX action area—or click a move.</p>
+            <div class="take-options">
+              <button class="take-card take-one" draggable="true" data-take="1"><span>⚡</span>Take 1 cell</button>
+              <button class="take-card take-two" draggable="true" data-take="2"><span>⚡⚡</span>Take 2 cells</button>
             </div>
-            <p class="accessibility-note">Tip: Check the district-specific restrictions before committing to neighboring colors.</p>
-            <button id="checkDistrictButton" class="primary-button check-button" type="button">Check My District Map</button>
-            <div id="districtFeedback" class="feedback" role="status" aria-live="polite">Color all eight districts, then check your map.</div>
-          </section>
+            <div id="takeZone" class="take-zone" tabindex="0"><b>MAX action area</b><span>Drop your move here</span></div>
+            <div class="history-panel"><h3>Move history</h3><ol id="moveHistory"><li>No moves yet.</li></ol></div>
+            <div class="actions"><button id="restartPowerGame" class="secondary" type="button">↻ Restart Game</button></div>
+            <p id="feedback3" class="feedback" role="status">You move first. Can you find the strategy that guarantees a win?</p>
+          </div>
         </div>
       </section>
     </section>
 
-    <section id="successScreen" class="success-screen" hidden>
-      <div class="confetti" aria-hidden="true">✦ ★ ✦ ★ ✦</div>
-      <div class="certificate">
-        <p class="certificate-kicker">CS 480/580 • Introduction to Artificial Intelligence</p>
-        <div class="success-icon" aria-hidden="true">✓</div>
-        <h2>Three Constraint Satisfaction Problems Solved!</h2>
-        <p class="certificate-copy">This certifies that</p>
-        <p id="certificateName" class="certificate-name"></p>
-        <p class="certificate-copy">successfully completed the <strong>Two Map-Coloring and Employee-Scheduling Challenge</strong> by creating three complete and consistent assignments.</p>
-        <div class="certificate-details">
-          <div><span>Completed</span><strong id="completionDate"></strong></div>
-          <div><span>Time used</span><strong id="completionTime"></strong></div>
-          <div><span>Schedule</span><strong id="finalSchedule"></strong></div>
-          <div><span>Australia map</span><strong id="finalMapColoring"></strong></div>
-          <div><span>District map</span><strong id="finalDistrictColoring"></strong></div>
-        </div>
-        <p class="certificate-note">In all three problems, every variable has a value and every constraint is satisfied.</p>
+    <section id="success" class="card certificate" hidden>
+      <div class="stars">★ · ★ · ★</div>
+      <p class="certificate-kicker">Certificate of Completion</p>
+      <h2>Susan Zehra’s Minimax Strategy Challenge</h2>
+      <p>This certifies that</p>
+      <div id="certificateName" class="certificate-name"></div>
+      <p>successfully evaluated adversarial game trees using the <b>Minimax algorithm</b>.</p>
+      <div class="certificate-details">
+        <div><span>Completed</span><b id="certificateDate"></b></div>
+        <div><span>Winning strategy</span><b>Control the game in groups of three</b></div>
       </div>
-      <div class="success-actions">
-        <button id="printButton" class="primary-button" type="button">Print / Save as PDF</button>
-        <button id="playAgainButton" class="secondary-button" type="button">Play Again</button>
-      </div>
+      <p class="success-note">✓ Completed all three interactive challenges</p>
+      <div class="actions no-print"><button id="printButton" class="primary">Print / Save as PDF</button><button id="playAgain" class="secondary">Play Again</button></div>
     </section>
   </main>
-  <script src="script.js?v=20260930-9"></script>
+
+  <footer>Designed as an interactive introduction to adversarial decision-making.</footer>
+  <script src="script.js"></script>
 </body>
 </html>
