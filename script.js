@@ -5,9 +5,6 @@ const gameScreen = document.querySelector("#gameScreen");
 const successScreen = document.querySelector("#successScreen");
 const nameForm = document.querySelector("#nameForm");
 const studentNameInput = document.querySelector("#studentName");
-const accessPasswordInput = document.querySelector("#accessPassword");
-const startButton = document.querySelector("#startButton");
-const consentCheckbox = document.querySelector("#consentCheckbox");
 const nameError = document.querySelector("#nameError");
 const playerName = document.querySelector("#playerName");
 const timerDisplay = document.querySelector("#timer");
@@ -18,9 +15,6 @@ const employeeCards = [...document.querySelectorAll(".employee-card")];
 const feedback = document.querySelector("#feedback");
 const checkButton = document.querySelector("#checkButton");
 const resetButton = document.querySelector("#resetButton");
-const visitCount = document.querySelector("#visitCount");
-const playCount = document.querySelector("#playCount");
-const recordStatus = document.querySelector("#recordStatus");
 const schedulingQuestion = document.querySelector("#schedulingQuestion");
 const mapQuestion = document.querySelector("#mapQuestion");
 const questionProgress = document.querySelector("#questionProgress");
@@ -35,7 +29,6 @@ const districtSwatches = [...document.querySelectorAll(".district-color-swatch")
 const districtFeedback = document.querySelector("#districtFeedback");
 const checkDistrictButton = document.querySelector("#checkDistrictButton");
 const resetDistrictButton = document.querySelector("#resetDistrictButton");
-const config = window.CSP_GAME_CONFIG || {};
 
 let activeCard = null;
 let selectedCard = null;
@@ -50,10 +43,6 @@ let selectedColor = null;
 let draggedColor = null;
 let selectedDistrictColor = null;
 let draggedDistrictColor = null;
-let sessionToken = "";
-let inactivityTimer = null;
-
-const INACTIVITY_LIMIT_MS = 20 * 60 * 1000;
 
 const MAP_COLORS = {
   red: "#ef5350",
@@ -75,107 +64,6 @@ const DISTRICT_ADJACENCIES = [
   ["C", "S"], ["C", "SW"], ["C", "W"]
 ];
 
-function apiConfigured() {
-  return typeof config.API_BASE_URL === "string" &&
-    config.API_BASE_URL.startsWith("https://") &&
-    !config.API_BASE_URL.includes("PASTE_YOUR");
-}
-
-function getVisitorId() {
-  const key = "csp-game-anonymous-visitor";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
-
-async function apiRequest(path, options = {}) {
-  if (!apiConfigured()) throw new Error("Tracking is not configured yet.");
-  const response = await fetch(`${config.API_BASE_URL.replace(/\/$/, "")}${path}`, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
-  });
-  if (!response.ok) {
-    const details = await response.json().catch(() => ({}));
-    throw new Error(details.error || `Request failed (${response.status}).`);
-  }
-  return response.json();
-}
-
-async function refreshStats() {
-  try {
-    const stats = await apiRequest("/stats");
-    visitCount.textContent = Number(stats.visitors).toLocaleString();
-    playCount.textContent = Number(stats.completions).toLocaleString();
-  } catch {
-    visitCount.textContent = "—";
-    playCount.textContent = "—";
-  }
-}
-
-async function recordVisit() {
-  try {
-    await apiRequest("/visit", {
-      method: "POST",
-      body: JSON.stringify({ visitorId: getVisitorId() })
-    });
-    await refreshStats();
-  } catch {
-    await refreshStats();
-  }
-}
-
-function pemToArrayBuffer(pem) {
-  const clean = pem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g, "");
-  if (!clean || clean.includes("PASTE_YOUR")) throw new Error("Encryption key is not configured.");
-  const binary = atob(clean);
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0)).buffer;
-}
-
-async function encryptCompletion(record) {
-  const publicKey = await crypto.subtle.importKey(
-    "spki",
-    pemToArrayBuffer(config.PUBLIC_KEY_PEM || ""),
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    false,
-    ["encrypt"]
-  );
-  const aesKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]);
-  const rawAesKey = await crypto.subtle.exportKey("raw", aesKey);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const plaintext = new TextEncoder().encode(JSON.stringify(record));
-  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, plaintext);
-  const wrappedKey = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, publicKey, rawAesKey);
-
-  const toBase64 = (value) => {
-    let binary = "";
-    new Uint8Array(value).forEach((byte) => { binary += String.fromCharCode(byte); });
-    return btoa(binary);
-  };
-  const encryptedPackage = JSON.stringify({
-    version: 1,
-    algorithm: "RSA-OAEP-3072/AES-256-GCM",
-    wrappedKey: toBase64(wrappedKey),
-    iv: toBase64(iv),
-    ciphertext: toBase64(ciphertext)
-  });
-  return btoa(encryptedPackage);
-}
-
-async function saveEncryptedCompletion(record) {
-  const encryptedRecord = await encryptCompletion(record);
-  return apiRequest("/complete", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${sessionToken}` },
-    body: JSON.stringify({
-      completionId: crypto.randomUUID(),
-      encryptedRecord
-    })
-  });
-}
-
 function cleanName(value) {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -191,45 +79,7 @@ function updateTimer() {
   if (startTime) timerDisplay.textContent = formatElapsed(Date.now() - startTime);
 }
 
-function resetInactivityTimer() {
-  if (!sessionToken) return;
-  window.clearTimeout(inactivityTimer);
-  inactivityTimer = window.setTimeout(expireInactiveSession, INACTIVITY_LIMIT_MS);
-}
-
-function expireInactiveSession() {
-  window.clearInterval(timerInterval);
-  window.clearTimeout(inactivityTimer);
-  sessionToken = "";
-  studentName = "";
-  solvedSchedule = null;
-  solvedAustraliaColoring = null;
-  solvedDistrictColoring = null;
-  checks = 0;
-  attemptCount.textContent = "0";
-  resetSchedule();
-  resetMap();
-  resetDistrictMap();
-  successScreen.hidden = true;
-  gameScreen.hidden = true;
-  welcomeScreen.hidden = false;
-  schedulingQuestion.hidden = true;
-  districtQuestion.hidden = true;
-  mapQuestion.hidden = false;
-  questionProgress.textContent = "Question 1 of 3";
-  studentNameInput.value = "";
-  accessPasswordInput.value = "";
-  consentCheckbox.checked = false;
-  nameError.textContent = "Your session ended after 20 minutes of inactivity. Enter your name and the current password to begin again.";
-  studentNameInput.focus();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-["pointerdown", "keydown", "touchstart", "scroll"].forEach((eventName) => {
-  document.addEventListener(eventName, resetInactivityTimer, { passive: true });
-});
-
-nameForm.addEventListener("submit", async (event) => {
+nameForm.addEventListener("submit", (event) => {
   event.preventDefault();
   studentName = cleanName(studentNameInput.value);
   if (studentName.length < 2) {
@@ -238,48 +88,19 @@ nameForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  if (!accessPasswordInput.value) {
-    nameError.textContent = "Please enter the activity password. Contact the instructor if you do not have it.";
-    accessPasswordInput.focus();
-    return;
-  }
-
-  const originalButtonText = startButton.textContent;
-  startButton.disabled = true;
-  startButton.textContent = "Checking…";
   nameError.textContent = "";
-
-  try {
-    const authentication = await apiRequest("/auth", {
-      method: "POST",
-      body: JSON.stringify({ password: accessPasswordInput.value })
-    });
-    sessionToken = authentication.token;
-    accessPasswordInput.value = "";
-    playerName.textContent = studentName;
-    welcomeScreen.hidden = true;
-    successScreen.hidden = true;
-    gameScreen.hidden = false;
-    mapQuestion.hidden = false;
-    districtQuestion.hidden = true;
-    schedulingQuestion.hidden = true;
-    questionProgress.textContent = "Question 1 of 3";
-    startTime = Date.now();
-    window.clearInterval(timerInterval);
-    timerInterval = window.setInterval(updateTimer, 1000);
-    updateTimer();
-    resetInactivityTimer();
-    recordVisit();
-  } catch (error) {
-    sessionToken = "";
-    nameError.textContent = error.message.includes("Incorrect")
-      ? "Incorrect activity password. Please try again or contact the instructor."
-      : `${error.message} Contact the instructor if you need access.`;
-    accessPasswordInput.select();
-  } finally {
-    startButton.disabled = false;
-    startButton.textContent = originalButtonText;
-  }
+  playerName.textContent = studentName;
+  welcomeScreen.hidden = true;
+  successScreen.hidden = true;
+  gameScreen.hidden = false;
+  mapQuestion.hidden = false;
+  districtQuestion.hidden = true;
+  schedulingQuestion.hidden = true;
+  questionProgress.textContent = "Question 1 of 3";
+  startTime = Date.now();
+  window.clearInterval(timerInterval);
+  timerInterval = window.setInterval(updateTimer, 1000);
+  updateTimer();
 });
 
 function getCardFromEvent(event) {
@@ -672,7 +493,7 @@ checkDistrictButton.addEventListener("click", () => {
   window.setTimeout(showSchedulingQuestion, 650);
 });
 
-async function showSuccess(assignments, australiaColoring, districtColoring) {
+function showSuccess(assignments, australiaColoring, districtColoring) {
   window.clearInterval(timerInterval);
   const elapsed = Date.now() - startTime;
   const completedAt = new Date();
@@ -693,26 +514,9 @@ async function showSuccess(assignments, australiaColoring, districtColoring) {
   document.querySelector("#finalSchedule").textContent = scheduleByShift;
   document.querySelector("#finalMapColoring").textContent = mapColoring;
   document.querySelector("#finalDistrictColoring").textContent = districtMapColoring;
-  recordStatus.textContent = "Securely recording this completion…";
   gameScreen.hidden = true;
   successScreen.hidden = false;
   successScreen.scrollIntoView({ behavior: "smooth", block: "start" });
-
-  try {
-    await saveEncryptedCompletion({
-      name: studentName,
-      completedAt: completedAt.toISOString(),
-      completedAtLocal: completedAt.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
-      elapsedSeconds: Math.max(0, Math.floor(elapsed / 1000)),
-      schedule: scheduleByShift,
-      australiaMapColoring: mapColoring,
-      districtMapColoring
-    });
-    recordStatus.textContent = "✓ Your encrypted completion record was saved successfully.";
-    await refreshStats();
-  } catch (error) {
-    recordStatus.textContent = `Your certificate is valid, but the encrypted online record could not be saved: ${error.message}`;
-  }
 }
 
 document.querySelector("#printButton").addEventListener("click", () => window.print());
@@ -734,9 +538,7 @@ document.querySelector("#playAgainButton").addEventListener("click", () => {
   mapQuestion.hidden = false;
   questionProgress.textContent = "Question 1 of 3";
   updateTimer();
-  resetInactivityTimer();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 updateSlotAppearance();
-refreshStats();

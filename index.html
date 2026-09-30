@@ -14,10 +14,6 @@
         <p class="eyebrow">CS 480/580 • Constraint Satisfaction Problems</p>
         <h1>Three-Part CSP Challenge</h1>
         <p class="subtitle">Solve two map-coloring problems and one employee-scheduling problem.</p>
-        <div class="public-stats" aria-label="Game activity counters">
-          <span><strong id="visitCount">—</strong> visitors</span>
-          <span><strong id="playCount">—</strong> successful completions</span>
-        </div>
       </div>
       <div class="hero-doodle" aria-hidden="true">🧩</div>
     </header>
@@ -29,19 +25,11 @@
         <p>Your name will appear on the completion screen after you solve all three CSPs.</p>
       </div>
       <form id="nameForm" class="name-form">
-        <label for="studentName">Student name</label>
-        <input id="studentName" name="studentName" type="text" maxlength="60" autocomplete="name" placeholder="Type your full name" required>
-        <label for="accessPassword" class="password-label">Activity password</label>
         <div class="name-row">
-          <input id="accessPassword" name="accessPassword" type="password" maxlength="128" autocomplete="current-password" placeholder="Enter the activity password" required>
+          <input id="studentName" name="studentName" type="text" maxlength="60" autocomplete="name" placeholder="Type your full name" required>
           <button id="startButton" class="primary-button" type="submit">Start Challenge →</button>
         </div>
-        <p class="password-help">Contact the instructor for the current activity password.</p>
-        <label class="consent-row" for="consentCheckbox">
-          <input id="consentCheckbox" type="checkbox" required>
-          <span>I consent to having my name, completion date/time, elapsed time, and final solutions recorded for this course activity. These details will be encrypted in my browser before being sent. The site also uses a random anonymous browser ID to estimate unique visitors.</span>
-        </label>
-        <p class="privacy-note"><strong>Privacy:</strong> The public page displays only total counts. Student names and completion details are never displayed publicly and cannot be decrypted without the instructor’s offline private key.</p>
+        <p class="privacy-note"><strong>Privacy:</strong> Nothing is stored or transmitted. Your name is used only in this browser to personalize the completion certificate.</p>
         <p id="nameError" class="form-error" role="alert"></p>
       </form>
     </section>
@@ -273,7 +261,6 @@
           <div><span>District map</span><strong id="finalDistrictColoring"></strong></div>
         </div>
         <p class="certificate-note">In all three problems, every variable has a value and every constraint is satisfied.</p>
-        <p id="recordStatus" class="record-status"></p>
       </div>
       <div class="success-actions">
         <button id="printButton" class="primary-button" type="button">Print / Save as PDF</button>
@@ -281,7 +268,6 @@
       </div>
     </section>
   </main>
-  <script src="config.js?v=20260930-8"></script>
-  <script src="script.js?v=20260930-8"></script>
+  <script src="script.js?v=20260930-9"></script>
 </body>
 </html>
