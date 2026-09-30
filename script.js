@@ -1,301 +1,547 @@
 "use strict";
 
-const welcome = document.querySelector("#welcome");
-const game = document.querySelector("#game");
-const success = document.querySelector("#success");
+const welcomeScreen = document.querySelector("#welcomeScreen");
+const gameScreen = document.querySelector("#gameScreen");
+const successScreen = document.querySelector("#successScreen");
 const nameForm = document.querySelector("#nameForm");
 const studentNameInput = document.querySelector("#studentName");
 const nameError = document.querySelector("#nameError");
-const playerGreeting = document.querySelector("#playerGreeting");
-const progressText = document.querySelector("#progressText");
-const progressBar = document.querySelector("#progressBar");
+const playerName = document.querySelector("#playerName");
+const timerDisplay = document.querySelector("#timer");
+const attemptCount = document.querySelector("#attemptCount");
+const employeeBank = document.querySelector("#employeeBank");
+const shiftSlots = [...document.querySelectorAll(".shift-slot")];
+const employeeCards = [...document.querySelectorAll(".employee-card")];
+const feedback = document.querySelector("#feedback");
+const checkButton = document.querySelector("#checkButton");
+const resetButton = document.querySelector("#resetButton");
+const schedulingQuestion = document.querySelector("#schedulingQuestion");
+const mapQuestion = document.querySelector("#mapQuestion");
+const questionProgress = document.querySelector("#questionProgress");
+const mapRegions = [...document.querySelectorAll(".map-region")];
+const colorSwatches = [...document.querySelectorAll(".color-swatch")];
+const mapFeedback = document.querySelector("#mapFeedback");
+const checkMapButton = document.querySelector("#checkMapButton");
+const resetMapButton = document.querySelector("#resetMapButton");
+const districtQuestion = document.querySelector("#districtQuestion");
+const districtRegions = [...document.querySelectorAll(".district-region")];
+const districtSwatches = [...document.querySelectorAll(".district-color-swatch")];
+const districtFeedback = document.querySelector("#districtFeedback");
+const checkDistrictButton = document.querySelector("#checkDistrictButton");
+const resetDistrictButton = document.querySelector("#resetDistrictButton");
 
+let activeCard = null;
+let selectedCard = null;
+let startTime = null;
+let timerInterval = null;
+let checks = 0;
 let studentName = "";
-let selectedToken = null;
-let draggedToken = null;
-let powerRemaining = 7;
-let powerGameOver = false;
-let powerPlayerTurn = true;
-let powerMoves = [];
-let powerLosses = 0;
+let solvedSchedule = null;
+let solvedAustraliaColoring = null;
+let solvedDistrictColoring = null;
+let selectedColor = null;
+let draggedColor = null;
+let selectedDistrictColor = null;
+let draggedDistrictColor = null;
+
+const MAP_COLORS = {
+  red: "#ef5350",
+  green: "#43a047",
+  blue: "#4285f4",
+  orange: "#f28c28"
+};
+
+const MAP_ADJACENCIES = [
+  ["WA", "NT"], ["WA", "SA"], ["NT", "SA"], ["NT", "QLD"],
+  ["SA", "QLD"], ["SA", "NSW"], ["SA", "VIC"], ["QLD", "NSW"],
+  ["NSW", "VIC"]
+];
+
+const DISTRICT_ADJACENCIES = [
+  ["NW", "N"], ["N", "NE"], ["NE", "E"], ["E", "S"],
+  ["S", "SW"], ["SW", "W"], ["W", "NW"],
+  ["C", "NW"], ["C", "N"], ["C", "NE"], ["C", "E"],
+  ["C", "S"], ["C", "SW"], ["C", "W"]
+];
 
 function cleanName(value) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function formatElapsed(milliseconds) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function updateTimer() {
+  if (startTime) timerDisplay.textContent = formatElapsed(Date.now() - startTime);
+}
+
 nameForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const value = cleanName(studentNameInput.value);
-  if (value.length < 2) {
+  studentName = cleanName(studentNameInput.value);
+  if (studentName.length < 2) {
     nameError.textContent = "Please enter your name before starting.";
+    studentNameInput.focus();
     return;
   }
-  studentName = value;
+
   nameError.textContent = "";
-  playerGreeting.textContent = `Player: ${studentName}`;
-  welcome.hidden = true;
-  game.hidden = false;
-  showQuestion(1);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  playerName.textContent = studentName;
+  welcomeScreen.hidden = true;
+  successScreen.hidden = true;
+  gameScreen.hidden = false;
+  mapQuestion.hidden = false;
+  districtQuestion.hidden = true;
+  schedulingQuestion.hidden = true;
+  questionProgress.textContent = "Question 1 of 3";
+  startTime = Date.now();
+  window.clearInterval(timerInterval);
+  timerInterval = window.setInterval(updateTimer, 1000);
+  updateTimer();
 });
 
-function tokenHome(token) {
-  return token.closest(".question").querySelector(".token-bank");
+function getCardFromEvent(event) {
+  const employee = event.dataTransfer?.getData("text/plain");
+  return employee ? document.querySelector(`[data-employee="${employee}"]`) : activeCard;
 }
 
-function clearSelection() {
-  document.querySelectorAll(".drag-token.selected").forEach((token) => token.classList.remove("selected"));
-  selectedToken = null;
+function updateSlotAppearance() {
+  shiftSlots.forEach((slot) => {
+    const content = slot.querySelector(".slot-content");
+    const card = content.querySelector(".employee-card");
+    slot.classList.toggle("filled", Boolean(card));
+    if (!card) content.textContent = "Drop employee here";
+  });
 }
 
-function restoreSlotLabel(slot) {
-  if (slot.classList.contains("move-cell")) {
-    slot.innerHTML = `<small>${slot.dataset.square}</small>`;
-  } else if (slot.closest("#question1")) {
-    slot.textContent = "Drop label";
-  } else if (slot.classList.contains("best-slot")) {
-    slot.textContent = "Best marker?";
-  } else {
-    slot.textContent = "Value?";
-  }
-}
+function moveCard(card, destination) {
+  if (!card || !destination) return;
 
-function placeToken(token, slot) {
-  if (!token || !slot) return;
-  const previousSlot = token.parentElement?.classList.contains("drop-slot") ? token.parentElement : null;
-  const existing = slot.querySelector(".drag-token");
-  if (existing && existing !== token) tokenHome(existing).appendChild(existing);
-  slot.textContent = "";
-  slot.appendChild(token);
-  slot.classList.add("filled");
-  slot.classList.remove("wrong", "correct", "drag-over");
-  if (previousSlot && previousSlot !== slot) {
-    restoreSlotLabel(previousSlot);
-    previousSlot.classList.remove("filled", "wrong", "correct");
-  }
-  clearSelection();
-}
-
-document.querySelectorAll(".drag-token").forEach((token) => {
-  token.addEventListener("click", () => {
-    const already = token === selectedToken;
-    clearSelection();
-    if (!already) {
-      selectedToken = token;
-      token.classList.add("selected");
+  if (destination.classList.contains("shift-slot")) {
+    const destinationContent = destination.querySelector(".slot-content");
+    const existing = destinationContent.querySelector(".employee-card");
+    if (existing && existing !== card) {
+      const sourceSlot = card.closest(".shift-slot");
+      if (sourceSlot) sourceSlot.querySelector(".slot-content").append(existing);
+      else employeeBank.querySelector(".bank-cards").append(existing);
     }
-  });
-  token.addEventListener("dragstart", (event) => {
-    draggedToken = token;
-    event.dataTransfer.setData("text/plain", token.dataset.value);
-  });
-  token.addEventListener("dragend", () => { draggedToken = null; });
-});
-
-document.querySelectorAll(".drop-slot").forEach((slot) => {
-  slot.addEventListener("click", () => { if (selectedToken) placeToken(selectedToken, slot); });
-  slot.addEventListener("dragover", (event) => { event.preventDefault(); slot.classList.add("drag-over"); });
-  slot.addEventListener("dragleave", () => slot.classList.remove("drag-over"));
-  slot.addEventListener("drop", (event) => {
-    event.preventDefault();
-    slot.classList.remove("drag-over");
-    if (draggedToken) placeToken(draggedToken, slot);
-  });
-});
-
-function resetQuestion(number) {
-  const section = document.querySelector(`#question${number}`);
-  const bank = section.querySelector(".token-bank");
-  section.querySelectorAll(".drop-slot").forEach((slot) => {
-    const token = slot.querySelector(".drag-token");
-    if (token) bank.appendChild(token);
-    slot.classList.remove("filled", "wrong", "correct", "drag-over");
-    restoreSlotLabel(slot);
-  });
-  clearSelection();
-  document.querySelector(`#feedback${number}`).className = "feedback";
-}
-
-document.querySelectorAll(".reset").forEach((button) => {
-  button.addEventListener("click", () => resetQuestion(button.dataset.question));
-});
-
-function checkSlots(number) {
-  const section = document.querySelector(`#question${number}`);
-  const requiredSlots = [...section.querySelectorAll('.drop-slot:not([data-answer="NOTHING"])')];
-  let complete = true;
-  let correct = true;
-  requiredSlots.forEach((slot) => {
-    const token = slot.querySelector(".drag-token");
-    slot.classList.remove("wrong", "correct");
-    if (!token) {
-      complete = false;
-      correct = false;
-      slot.classList.add("wrong");
-    } else if (token.dataset.value === slot.dataset.answer) {
-      slot.classList.add("correct");
-    } else {
-      correct = false;
-      slot.classList.add("wrong");
-    }
-  });
-  return { complete, correct };
-}
-
-function feedback(number, message, type) {
-  const box = document.querySelector(`#feedback${number}`);
-  box.textContent = message;
-  box.className = `feedback ${type}`;
-}
-
-document.querySelector("#checkQ1").addEventListener("click", () => {
-  const result = checkSlots(1);
-  if (!result.complete) return feedback(1, "Place all three labels before checking.", "bad");
-  if (!result.correct) return feedback(1, "Not quite. MAX begins at the root, MIN responds on the next level, and utilities appear at terminal nodes.", "bad");
-  feedback(1, "Correct! Minimax alternates MAX and MIN until it reaches terminal utility values.", "good");
-  window.setTimeout(() => showQuestion(2), 850);
-});
-
-document.querySelector("#checkQ2").addEventListener("click", () => {
-  const result = checkSlots(2);
-  if (!result.complete) return feedback(2, "Complete all three internal-node values first.", "bad");
-  if (!result.correct) return feedback(2, "Recheck from the bottom: MIN takes the smaller value in each pair; MAX then takes the larger backed-up value.", "bad");
-  feedback(2, "Correct! Plan A backs up 2, Plan B backs up 4, and MAX selects 4.", "good");
-  window.setTimeout(() => showQuestion(3), 900);
-});
-
-const powerCells = document.querySelector("#powerCells");
-const remainingCount = document.querySelector("#remainingCount");
-const turnLabel = document.querySelector("#turnLabel");
-const takeZone = document.querySelector("#takeZone");
-const moveHistory = document.querySelector("#moveHistory");
-const takeCards = [...document.querySelectorAll(".take-card")];
-
-function renderPowerGame() {
-  powerCells.innerHTML = "";
-  for (let number = 1; number <= powerRemaining; number += 1) {
-    const cell = document.createElement("span");
-    cell.className = "power-cell";
-    cell.textContent = "⚡";
-    cell.setAttribute("aria-label", `Power cell ${number}`);
-    powerCells.appendChild(cell);
-  }
-  remainingCount.textContent = String(powerRemaining);
-  powerCells.setAttribute("aria-label", `${powerRemaining} power cells remaining`);
-  turnLabel.textContent = powerGameOver ? "Game complete" : powerPlayerTurn ? "Your turn · MAX" : "Computer turn · MIN";
-  takeCards.forEach((card) => {
-    const amount = Number(card.dataset.take);
-    card.disabled = powerGameOver || !powerPlayerTurn || amount > powerRemaining;
-  });
-  moveHistory.innerHTML = powerMoves.length
-    ? powerMoves.map((move) => `<li><b>${move.player}</b> removed ${move.amount} ${move.amount === 1 ? "cell" : "cells"}; ${move.left} remaining.</li>`).join("")
-    : "<li>No moves yet.</li>";
-}
-
-function startPowerGame() {
-  powerRemaining = 7;
-  powerGameOver = false;
-  powerPlayerTurn = true;
-  powerMoves = [];
-  takeZone.classList.remove("drag-over", "locked");
-  feedback(3, "You move first. Can you find the strategy that guarantees a win?", "");
-  renderPowerGame();
-}
-
-function finishPowerGame(playerWon) {
-  powerGameOver = true;
-  renderPowerGame();
-  if (playerWon) {
-    feedback(3, "You won! Starting with 7, take 1 first. After that, make your move and the computer’s previous move total 3.", "good");
-    window.setTimeout(showCertificate, 1400);
+    destinationContent.textContent = "";
+    destinationContent.append(card);
   } else {
-    powerLosses += 1;
-    const hint = powerLosses >= 2
-      ? " Hint: your first move should leave a multiple of 3 for the computer."
-      : " Restart and think about what your first move should leave behind.";
-    feedback(3, `The computer took the final cell. MIN wins.${hint}`, "bad");
+    employeeBank.querySelector(".bank-cards").append(card);
   }
+
+  selectedCard?.classList.remove("selected");
+  selectedCard = null;
+  updateSlotAppearance();
+  clearRuleMarks();
+  setFeedback("Schedule changed. Check it when all five shifts are filled.", "");
 }
 
-function computerPowerMove() {
-  if (powerGameOver || powerPlayerTurn) return;
-  let amount = powerRemaining % 3;
-  if (amount === 0) amount = 1;
-  amount = Math.min(amount, 2, powerRemaining);
-  powerRemaining -= amount;
-  powerMoves.push({ player: "Computer (MIN)", amount, left: powerRemaining });
-  if (powerRemaining === 0) {
-    finishPowerGame(false);
-    return;
-  }
-  powerPlayerTurn = true;
-  feedback(3, `The computer removed ${amount}. Your turn—${powerRemaining} cells remain.`, "");
-  renderPowerGame();
-}
-
-function makePowerMove(amount) {
-  if (powerGameOver || !powerPlayerTurn) return;
-  if (![1, 2].includes(amount) || amount > powerRemaining) {
-    feedback(3, "That move is not available. Remove one or two remaining cells.", "bad");
-    return;
-  }
-  powerRemaining -= amount;
-  powerMoves.push({ player: "You (MAX)", amount, left: powerRemaining });
-  if (powerRemaining === 0) {
-    finishPowerGame(true);
-    return;
-  }
-  powerPlayerTurn = false;
-  feedback(3, "The computer is using Minimax to choose its response…", "");
-  renderPowerGame();
-  window.setTimeout(computerPowerMove, 650);
-}
-
-takeCards.forEach((card) => {
-  card.addEventListener("click", () => makePowerMove(Number(card.dataset.take)));
+employeeCards.forEach((card) => {
   card.addEventListener("dragstart", (event) => {
-    event.dataTransfer.setData("text/plain", card.dataset.take);
+    activeCard = card;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", card.dataset.employee);
+  });
+  card.addEventListener("dragend", () => { activeCard = null; });
+  card.addEventListener("click", (event) => {
+    event.stopPropagation();
+    employeeCards.forEach((item) => item.classList.remove("selected"));
+    selectedCard = selectedCard === card ? null : card;
+    selectedCard?.classList.add("selected");
   });
 });
 
-takeZone.addEventListener("dragover", (event) => {
-  if (!powerGameOver && powerPlayerTurn) {
+[...shiftSlots, employeeBank].forEach((zone) => {
+  zone.addEventListener("dragover", (event) => {
     event.preventDefault();
-    takeZone.classList.add("drag-over");
-  }
+    zone.classList.add("drag-over");
+  });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+  zone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    zone.classList.remove("drag-over");
+    moveCard(getCardFromEvent(event), zone);
+  });
+  zone.addEventListener("click", () => {
+    if (selectedCard) moveCard(selectedCard, zone);
+  });
 });
-takeZone.addEventListener("dragleave", () => takeZone.classList.remove("drag-over"));
-takeZone.addEventListener("drop", (event) => {
-  event.preventDefault();
-  takeZone.classList.remove("drag-over");
-  makePowerMove(Number(event.dataTransfer.getData("text/plain")));
-});
-document.querySelector("#restartPowerGame").addEventListener("click", startPowerGame);
 
-function showQuestion(number) {
-  [1, 2, 3].forEach((item) => { document.querySelector(`#question${item}`).hidden = item !== number; });
-  progressText.textContent = `Question ${number} of 3`;
-  progressBar.style.width = `${number * 33.333}%`;
-  if (number === 3) startPowerGame();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+function getAssignments() {
+  const assignments = {};
+  shiftSlots.forEach((slot) => {
+    const card = slot.querySelector(".employee-card");
+    if (card) assignments[card.dataset.employee] = Number(slot.dataset.shift);
+  });
+  return assignments;
 }
 
-function showCertificate() {
-  game.hidden = true;
-  success.hidden = false;
+function evaluate(assignments) {
+  const complete = Object.keys(assignments).length === 5;
+  return {
+    complete,
+    A: complete && [2, 3, 4].includes(assignments.A),
+    C: complete && assignments.C + 1 === assignments.A,
+    D: complete && assignments.D < assignments.C,
+    B: complete && assignments.B > assignments.A,
+    E: complete && assignments.E < assignments.B,
+    adjacent: complete && Math.abs(assignments.D - assignments.E) > 1
+  };
+}
+
+function clearRuleMarks() {
+  document.querySelectorAll("#constraintList li").forEach((item) => {
+    item.classList.remove("valid", "invalid");
+    item.querySelector(".rule-icon").textContent = "○";
+  });
+}
+
+function showRuleMarks(results) {
+  Object.entries(results).forEach(([rule, passed]) => {
+    const item = document.querySelector(`[data-rule="${rule}"]`);
+    item.classList.add(passed ? "valid" : "invalid");
+    item.querySelector(".rule-icon").textContent = passed ? "✓" : "✕";
+  });
+}
+
+function setFeedback(message, type) {
+  feedback.textContent = message;
+  feedback.className = `feedback${type ? ` ${type}` : ""}`;
+}
+
+checkButton.addEventListener("click", () => {
+  checks += 1;
+  attemptCount.textContent = String(checks);
+  const assignments = getAssignments();
+  const results = evaluate(assignments);
+  clearRuleMarks();
+  showRuleMarks(results);
+
+  if (!results.complete) {
+    setFeedback("The assignment is incomplete. Place one employee in all five shifts, then check again.", "error");
+    return;
+  }
+
+  const failedRules = Object.entries(results).filter(([, passed]) => !passed).map(([rule]) => rule);
+  if (failedRules.length) {
+    setFeedback(`Not consistent yet. ${failedRules.length} constraint${failedRules.length > 1 ? "s are" : " is"} violated. Use the red rule marker${failedRules.length > 1 ? "s" : ""} as a hint and revise the schedule.`, "error");
+    return;
+  }
+
+  setFeedback("Excellent—your assignment is complete and consistent!", "good");
+  solvedSchedule = { ...assignments };
+  window.setTimeout(() => showSuccess(solvedSchedule, solvedAustraliaColoring, solvedDistrictColoring), 650);
+});
+
+function showSchedulingQuestion() {
+  districtQuestion.hidden = true;
+  schedulingQuestion.hidden = false;
+  questionProgress.textContent = "Question 3 of 3";
+  schedulingQuestion.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resetSchedule() {
+  employeeCards.forEach((card) => employeeBank.querySelector(".bank-cards").append(card));
+  employeeCards.forEach((card) => card.classList.remove("selected"));
+  selectedCard = null;
+  updateSlotAppearance();
+  clearRuleMarks();
+  setFeedback("Assign all five employees, then check your schedule.", "");
+}
+
+resetButton.addEventListener("click", resetSchedule);
+
+function setMapFeedback(message, type = "") {
+  mapFeedback.textContent = message;
+  mapFeedback.className = `feedback${type ? ` ${type}` : ""}`;
+}
+
+function chooseColor(color) {
+  selectedColor = color;
+  colorSwatches.forEach((swatch) => {
+    swatch.classList.toggle("selected", swatch.dataset.color === color);
+    swatch.setAttribute("aria-pressed", String(swatch.dataset.color === color));
+  });
+}
+
+function applyColor(regionElement, color) {
+  if (!regionElement || !MAP_COLORS[color]) return;
+  regionElement.dataset.color = color;
+  regionElement.querySelector("polygon").style.fill = MAP_COLORS[color];
+  regionElement.classList.remove("conflict");
+  regionElement.setAttribute("aria-label", `${regionElement.dataset.region}, colored ${color}`);
+  setMapFeedback("Map changed. Color every region, then check your map.");
+}
+
+colorSwatches.forEach((swatch) => {
+  swatch.setAttribute("aria-pressed", "false");
+  swatch.addEventListener("click", () => chooseColor(swatch.dataset.color));
+  swatch.addEventListener("dragstart", (event) => {
+    draggedColor = swatch.dataset.color;
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("text/plain", draggedColor);
+  });
+  swatch.addEventListener("dragend", () => { draggedColor = null; });
+});
+
+mapRegions.forEach((region) => {
+  region.addEventListener("click", () => {
+    if (selectedColor) applyColor(region, selectedColor);
+    else setMapFeedback("Choose a color first, then select a region.", "error");
+  });
+  region.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && selectedColor) {
+      event.preventDefault();
+      applyColor(region, selectedColor);
+    }
+  });
+  region.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    region.classList.add("drag-over");
+  });
+  region.addEventListener("dragleave", () => region.classList.remove("drag-over"));
+  region.addEventListener("drop", (event) => {
+    event.preventDefault();
+    region.classList.remove("drag-over");
+    const color = event.dataTransfer.getData("text/plain") || draggedColor;
+    applyColor(region, color);
+  });
+});
+
+function getMapColoring() {
+  return Object.fromEntries(mapRegions.map((region) => [region.dataset.region, region.dataset.color || ""]));
+}
+
+function evaluateMap(coloring) {
+  const incomplete = Object.entries(coloring).filter(([, color]) => !color).map(([region]) => region);
+  const conflicts = MAP_ADJACENCIES.filter(([first, second]) => coloring[first] && coloring[first] === coloring[second]);
+  return { incomplete, conflicts };
+}
+
+function resetMap() {
+  selectedColor = null;
+  draggedColor = null;
+  colorSwatches.forEach((swatch) => {
+    swatch.classList.remove("selected");
+    swatch.setAttribute("aria-pressed", "false");
+  });
+  mapRegions.forEach((region) => {
+    delete region.dataset.color;
+    region.classList.remove("conflict", "drag-over");
+    region.querySelector("polygon").style.removeProperty("fill");
+    region.setAttribute("aria-label", `${region.dataset.region}, not colored`);
+  });
+  setMapFeedback("Color all seven regions, then check your map.");
+}
+
+resetMapButton.addEventListener("click", resetMap);
+
+checkMapButton.addEventListener("click", () => {
+  checks += 1;
+  attemptCount.textContent = String(checks);
+  mapRegions.forEach((region) => region.classList.remove("conflict"));
+  const coloring = getMapColoring();
+  const results = evaluateMap(coloring);
+
+  if (results.incomplete.length) {
+    setMapFeedback(`Color every region first. Still missing: ${results.incomplete.join(", ")}.`, "error");
+    return;
+  }
+
+  if (results.conflicts.length) {
+    const names = new Set(results.conflicts.flat());
+    mapRegions.filter((region) => names.has(region.dataset.region)).forEach((region) => region.classList.add("conflict"));
+    const pairs = results.conflicts.map(([first, second]) => `${first}–${second}`).join(", ");
+    setMapFeedback(`Not consistent yet. These neighboring regions share a color: ${pairs}.`, "error");
+    return;
+  }
+
+  setMapFeedback("Excellent—every region is colored and all neighboring regions differ!", "good");
+  solvedAustraliaColoring = { ...coloring };
+  window.setTimeout(showDistrictQuestion, 650);
+});
+
+function showDistrictQuestion() {
+  mapQuestion.hidden = true;
+  districtQuestion.hidden = false;
+  questionProgress.textContent = "Question 2 of 3";
+  districtQuestion.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setDistrictFeedback(message, type = "") {
+  districtFeedback.textContent = message;
+  districtFeedback.className = `feedback${type ? ` ${type}` : ""}`;
+}
+
+function chooseDistrictColor(color) {
+  selectedDistrictColor = color;
+  districtSwatches.forEach((swatch) => {
+    swatch.classList.toggle("selected", swatch.dataset.color === color);
+    swatch.setAttribute("aria-pressed", String(swatch.dataset.color === color));
+  });
+}
+
+function applyDistrictColor(regionElement, color) {
+  if (!regionElement || !MAP_COLORS[color]) return;
+  regionElement.dataset.color = color;
+  regionElement.querySelector("polygon").style.fill = MAP_COLORS[color];
+  regionElement.classList.remove("conflict");
+  regionElement.setAttribute("aria-label", `${regionElement.dataset.district} district, colored ${color}`);
+  setDistrictFeedback("Map changed. Color every district, then check your map.");
+}
+
+districtSwatches.forEach((swatch) => {
+  swatch.setAttribute("aria-pressed", "false");
+  swatch.addEventListener("click", () => chooseDistrictColor(swatch.dataset.color));
+  swatch.addEventListener("dragstart", (event) => {
+    draggedDistrictColor = swatch.dataset.color;
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("text/plain", draggedDistrictColor);
+  });
+  swatch.addEventListener("dragend", () => { draggedDistrictColor = null; });
+});
+
+districtRegions.forEach((region) => {
+  region.addEventListener("click", () => {
+    if (selectedDistrictColor) applyDistrictColor(region, selectedDistrictColor);
+    else setDistrictFeedback("Choose a color first, then select a district.", "error");
+  });
+  region.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && selectedDistrictColor) {
+      event.preventDefault();
+      applyDistrictColor(region, selectedDistrictColor);
+    }
+  });
+  region.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    region.classList.add("drag-over");
+  });
+  region.addEventListener("dragleave", () => region.classList.remove("drag-over"));
+  region.addEventListener("drop", (event) => {
+    event.preventDefault();
+    region.classList.remove("drag-over");
+    const color = event.dataTransfer.getData("text/plain") || draggedDistrictColor;
+    applyDistrictColor(region, color);
+  });
+});
+
+function getDistrictColoring() {
+  return Object.fromEntries(districtRegions.map((region) => [region.dataset.district, region.dataset.color || ""]));
+}
+
+function evaluateDistrictMap(coloring) {
+  const incomplete = Object.entries(coloring).filter(([, color]) => !color).map(([district]) => district);
+  const conflicts = DISTRICT_ADJACENCIES.filter(([first, second]) => coloring[first] && coloring[first] === coloring[second]);
+  const restrictions = [];
+  if (coloring.C && coloring.C !== "orange") restrictions.push(["C", "must be orange"]);
+  if (coloring.E && coloring.E !== "blue") restrictions.push(["E", "must be blue"]);
+  if (coloring.NW && coloring.E && coloring.NW !== coloring.E) restrictions.push(["NW", "must use the same color as E"]);
+  if (coloring.N === "red") restrictions.push(["N", "cannot be red"]);
+  if (coloring.W === "green") restrictions.push(["W", "cannot be green"]);
+  if (coloring.S === "green") restrictions.push(["S", "cannot be green"]);
+  if (coloring.SW === "blue") restrictions.push(["SW", "cannot be blue"]);
+  return { incomplete, conflicts, restrictions };
+}
+
+function resetDistrictMap() {
+  selectedDistrictColor = null;
+  draggedDistrictColor = null;
+  districtSwatches.forEach((swatch) => {
+    swatch.classList.remove("selected");
+    swatch.setAttribute("aria-pressed", "false");
+  });
+  districtRegions.forEach((region) => {
+    delete region.dataset.color;
+    region.classList.remove("conflict", "drag-over");
+    region.querySelector("polygon").style.removeProperty("fill");
+    region.setAttribute("aria-label", `${region.dataset.district} district, not colored`);
+  });
+  setDistrictFeedback("Color all eight districts, then check your map.");
+}
+
+resetDistrictButton.addEventListener("click", resetDistrictMap);
+
+checkDistrictButton.addEventListener("click", () => {
+  checks += 1;
+  attemptCount.textContent = String(checks);
+  districtRegions.forEach((region) => region.classList.remove("conflict"));
+  const coloring = getDistrictColoring();
+  const results = evaluateDistrictMap(coloring);
+
+  if (results.incomplete.length) {
+    setDistrictFeedback(`Color every district first. Still missing: ${results.incomplete.join(", ")}.`, "error");
+    return;
+  }
+
+  if (results.conflicts.length || results.restrictions.length) {
+    const names = new Set([
+      ...results.conflicts.flat(),
+      ...results.restrictions.map(([district]) => district)
+    ]);
+    districtRegions.filter((region) => names.has(region.dataset.district)).forEach((region) => region.classList.add("conflict"));
+    const messages = [];
+    if (results.conflicts.length) messages.push(`same-color borders: ${results.conflicts.map(([first, second]) => `${first}–${second}`).join(", ")}`);
+    if (results.restrictions.length) messages.push(`district restrictions: ${results.restrictions.map(([district, rule]) => `${district} ${rule}`).join(", ")}`);
+    setDistrictFeedback(`Not consistent yet. ${messages.join("; ")}.`, "error");
+    return;
+  }
+
+  setDistrictFeedback("Excellent—this more connected map is complete and consistent!", "good");
+  solvedDistrictColoring = { ...coloring };
+  window.setTimeout(showSchedulingQuestion, 650);
+});
+
+function showSuccess(assignments, australiaColoring, districtColoring) {
+  window.clearInterval(timerInterval);
+  const elapsed = Date.now() - startTime;
+  const completedAt = new Date();
+  const scheduleByShift = Object.entries(assignments)
+    .sort(([, shiftA], [, shiftB]) => shiftA - shiftB)
+    .map(([employee, shift]) => `${employee}→${shift}`)
+    .join(", ");
+  const mapColoring = ["WA", "NT", "SA", "QLD", "NSW", "VIC", "TAS"]
+    .map((region) => `${region}→${australiaColoring[region][0].toUpperCase()}`)
+    .join(", ");
+  const districtMapColoring = ["NW", "N", "NE", "E", "S", "SW", "W", "C"]
+    .map((district) => `${district}→${districtColoring[district][0].toUpperCase()}`)
+    .join(", ");
+
   document.querySelector("#certificateName").textContent = studentName;
-  document.querySelector("#certificateDate").textContent = new Intl.DateTimeFormat(undefined, {
-    dateStyle: "long", timeStyle: "short"
-  }).format(new Date());
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  document.querySelector("#completionDate").textContent = completedAt.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+  document.querySelector("#completionTime").textContent = formatElapsed(elapsed);
+  document.querySelector("#finalSchedule").textContent = scheduleByShift;
+  document.querySelector("#finalMapColoring").textContent = mapColoring;
+  document.querySelector("#finalDistrictColoring").textContent = districtMapColoring;
+  gameScreen.hidden = true;
+  successScreen.hidden = false;
+  successScreen.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 document.querySelector("#printButton").addEventListener("click", () => window.print());
-document.querySelector("#playAgain").addEventListener("click", () => {
-  [1, 2, 3].forEach(resetQuestion);
-  success.hidden = true;
-  welcome.hidden = false;
-  studentNameInput.value = "";
-  studentName = "";
+document.querySelector("#playAgainButton").addEventListener("click", () => {
+  resetSchedule();
+  resetMap();
+  resetDistrictMap();
+  solvedSchedule = null;
+  solvedAustraliaColoring = null;
+  solvedDistrictColoring = null;
+  checks = 0;
+  attemptCount.textContent = "0";
+  startTime = Date.now();
+  timerInterval = window.setInterval(updateTimer, 1000);
+  successScreen.hidden = true;
+  gameScreen.hidden = false;
+  schedulingQuestion.hidden = true;
+  districtQuestion.hidden = true;
+  mapQuestion.hidden = false;
+  questionProgress.textContent = "Question 1 of 3";
+  updateTimer();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
+
+updateSlotAppearance();
