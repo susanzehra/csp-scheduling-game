@@ -440,8 +440,11 @@ function evaluateDistrictMap(coloring) {
   const restrictions = [];
   if (coloring.C && coloring.C !== "orange") restrictions.push(["C", "must be orange"]);
   if (coloring.E && coloring.E !== "blue") restrictions.push(["E", "must be blue"]);
+  if (coloring.NW && coloring.E && coloring.NW !== coloring.E) restrictions.push(["NW", "must use the same color as E"]);
   if (coloring.N === "red") restrictions.push(["N", "cannot be red"]);
   if (coloring.W === "green") restrictions.push(["W", "cannot be green"]);
+  if (coloring.S === "green") restrictions.push(["S", "cannot be green"]);
+  if (coloring.SW === "blue") restrictions.push(["SW", "cannot be blue"]);
   return { incomplete, conflicts, restrictions };
 }
 

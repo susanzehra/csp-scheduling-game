@@ -175,7 +175,7 @@
           <div class="scenario-text">
             <span class="step-label">Question 2 • Advanced map coloring</span>
             <h2>Color the emergency-response districts</h2>
-            <p>A regional emergency-management office divides a service area into eight connected districts. Assign colors so neighboring districts are easy to distinguish on operational maps. Operational overlays also restrict which colors may be used in several districts.</p>
+            <p>A regional emergency-management office divides a service area into eight connected districts. Its map must satisfy border rules, fixed operational colors, prohibited colors, and one shared-color requirement. Several choices that look valid at first will create a conflict later, so plan before checking your map.</p>
           </div>
           <div class="mini-flow" aria-label="Emergency districts receive colors that satisfy border constraints">
             <span>8 districts</span><b>→</b><span>More borders</span><b>→</b><span>Valid map</span>
@@ -194,10 +194,13 @@
               <li><span class="rule-icon">○</span>Each outer district also borders the outer district on either side.</li>
               <li><span class="rule-icon">○</span>Central District C must be orange.</li>
               <li><span class="rule-icon">○</span>East District E must be blue.</li>
+              <li><span class="rule-icon">○</span>Northwest District NW must use the same color as East District E.</li>
               <li><span class="rule-icon">○</span>North District N cannot be red.</li>
               <li><span class="rule-icon">○</span>West District W cannot be green.</li>
+              <li><span class="rule-icon">○</span>South District S cannot be green.</li>
+              <li><span class="rule-icon">○</span>Southwest District SW cannot be blue.</li>
             </ul>
-            <div class="tip-box"><strong>Why it is harder:</strong> you must satisfy both shared-border constraints and district-specific color restrictions.</div>
+            <div class="tip-box"><strong>Strategy:</strong> begin with C and E. Then use the NW–E relationship and the prohibited colors to infer the remaining districts. You may need to backtrack if an early choice blocks a later district.</div>
           </section>
 
           <section class="panel workspace-panel map-workspace">
