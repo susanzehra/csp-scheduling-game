@@ -68,10 +68,14 @@ button { touch-action: manipulation; }
 .step-label.orange { color: #d56d0a; border-color: #ffc080; }
 
 .name-form label { display: block; font-weight: 800; margin-bottom: 8px; }
+.name-form > input { width: 100%; padding: 15px 16px; border: 2px solid #9ab6da; border-radius: 12px; background: white; outline: none; }
+.name-form > input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(23,105,224,.12); }
+.name-form .password-label { margin-top: 15px; }
 .name-row { display: flex; gap: 10px; }
 .name-row input { min-width: 0; flex: 1; padding: 15px 16px; border: 2px solid #9ab6da; border-radius: 12px; background: white; outline: none; }
 .name-row input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(23,105,224,.12); }
 .form-error { color: var(--red); font-weight: 700; min-height: 1.2em; margin-bottom: 0; }
+.password-help { margin: 8px 0 0; color: #526b87; font-size: .82rem; font-weight: 700; }
 .consent-row { margin-top: 16px; display: grid !important; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; font-size: .86rem; line-height: 1.45; font-weight: 600 !important; }
 .consent-row input { width: 19px; height: 19px; margin-top: 2px; accent-color: var(--blue); }
 .privacy-note { margin: 12px 0 0; padding: 10px 12px; color: #425b76; background: #eef6ff; border-left: 4px solid var(--teal); border-radius: 7px; font-size: .78rem; line-height: 1.4; }

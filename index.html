@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A three-part interactive constraint satisfaction challenge for introductory AI students.">
   <title>Three-Part CSP Challenge</title>
-  <link rel="stylesheet" href="style.css?v=20260930-7">
+  <link rel="stylesheet" href="style.css?v=20260930-8">
 </head>
 <body>
   <main class="page-shell">
@@ -30,10 +30,13 @@
       </div>
       <form id="nameForm" class="name-form">
         <label for="studentName">Student name</label>
+        <input id="studentName" name="studentName" type="text" maxlength="60" autocomplete="name" placeholder="Type your full name" required>
+        <label for="accessPassword" class="password-label">Activity password</label>
         <div class="name-row">
-          <input id="studentName" name="studentName" type="text" maxlength="60" autocomplete="name" placeholder="Type your full name" required>
-          <button class="primary-button" type="submit">Start Challenge →</button>
+          <input id="accessPassword" name="accessPassword" type="password" maxlength="128" autocomplete="current-password" placeholder="Enter the activity password" required>
+          <button id="startButton" class="primary-button" type="submit">Start Challenge →</button>
         </div>
+        <p class="password-help">Contact the instructor for the current activity password.</p>
         <label class="consent-row" for="consentCheckbox">
           <input id="consentCheckbox" type="checkbox" required>
           <span>I consent to having my name, completion date/time, elapsed time, and final solutions recorded for this course activity. These details will be encrypted in my browser before being sent. The site also uses a random anonymous browser ID to estimate unique visitors.</span>
@@ -184,7 +187,7 @@
           <div class="scenario-text">
             <span class="step-label">Question 2 • Advanced map coloring</span>
             <h2>Color the emergency-response districts</h2>
-            <p>A regional emergency-management office divides a service area into eight connected districts. Assign colors so neighboring districts are easy to distinguish on operational maps. This map has more connections than Australia, including a central district that borders every outer district.</p>
+            <p>A regional emergency-management office divides a service area into eight connected districts. Assign colors so neighboring districts are easy to distinguish on operational maps. Operational overlays also restrict which colors may be used in several districts.</p>
           </div>
           <div class="mini-flow" aria-label="Emergency districts receive colors that satisfy border constraints">
             <span>8 districts</span><b>→</b><span>More borders</span><b>→</b><span>Valid map</span>
@@ -201,8 +204,12 @@
               <li><span class="rule-icon">○</span>Districts sharing a border cannot use the same color.</li>
               <li><span class="rule-icon">○</span>The central district borders every outer district.</li>
               <li><span class="rule-icon">○</span>Each outer district also borders the outer district on either side.</li>
+              <li><span class="rule-icon">○</span>Central District C must be orange.</li>
+              <li><span class="rule-icon">○</span>East District E must be blue.</li>
+              <li><span class="rule-icon">○</span>North District N cannot be red.</li>
+              <li><span class="rule-icon">○</span>West District W cannot be green.</li>
             </ul>
-            <div class="tip-box"><strong>Why it is harder:</strong> the seven outer districts form a connected ring, while the central district constrains every choice around it.</div>
+            <div class="tip-box"><strong>Why it is harder:</strong> you must satisfy both shared-border constraints and district-specific color restrictions.</div>
           </section>
 
           <section class="panel workspace-panel map-workspace">
@@ -241,7 +248,7 @@
                 </g>
               </svg>
             </div>
-            <p class="accessibility-note">Tip: Begin with the central district, then work around the outer ring.</p>
+            <p class="accessibility-note">Tip: Check the district-specific restrictions before committing to neighboring colors.</p>
             <button id="checkDistrictButton" class="primary-button check-button" type="button">Check My District Map</button>
             <div id="districtFeedback" class="feedback" role="status" aria-live="polite">Color all eight districts, then check your map.</div>
           </section>
@@ -274,7 +281,7 @@
       </div>
     </section>
   </main>
-  <script src="config.js?v=20260930-7"></script>
-  <script src="script.js?v=20260930-7"></script>
+  <script src="config.js?v=20260930-8"></script>
+  <script src="script.js?v=20260930-8"></script>
 </body>
 </html>

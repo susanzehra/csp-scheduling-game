@@ -1,10 +1,10 @@
 # Three-Part CSP Challenge
 
-A browser-based game for introducing constraint satisfaction problems (CSPs) through Australia map coloring, advanced district map coloring, and employee scheduling. The public game is hosted on GitHub Pages. An optional Cloudflare Worker and D1 database provide anonymous visitor counts and encrypted completion records.
+A browser-based game for introducing constraint satisfaction problems (CSPs) through Australia map coloring, advanced district map coloring, and employee scheduling. The public game is hosted on GitHub Pages. A Cloudflare Worker and D1 database verify the instructor-controlled activity password, provide anonymous visitor counts, and store encrypted completion records.
 
 ## What students do
 
-1. Enter their name.
+1. Enter their name and the current instructor-provided password.
 2. Color the seven Australian regions with red, green, or blue so adjacent regions differ.
 3. Solve a harder eight-district coloring problem using four colors.
 4. Assign Employees A–E to Shifts 1–5 and satisfy all scheduling constraints.
@@ -15,7 +15,7 @@ Students can drag cards or use the click-an-employee, click-a-shift alternative.
 
 ## Run it locally
 
-Open `index.html` in a browser. No installation is required.
+The page itself can be opened locally, but starting the protected activity requires a configured and deployed Cloudflare Worker.
 
 For a local web server, you may run:
 
@@ -81,15 +81,52 @@ You need a free Cloudflare account and Node.js installed.
 
    Enter the token when prompted and save a copy in your password manager.
 
-8. Deploy the Worker:
+8. Create a separate random session-signing secret. Generate one, copy it, and paste it when Wrangler prompts you:
+
+   ```bash
+   openssl rand -base64 48
+   npx wrangler secret put SESSION_SECRET
+   ```
+
+   Never place `SESSION_SECRET` in GitHub or `config.js`.
+
+9. Deploy the Worker:
 
    ```bash
    npx wrangler deploy
    ```
 
-9. Copy the Worker URL shown after deployment into `API_BASE_URL` in `config.js`.
+10. Copy the Worker URL shown after deployment into `API_BASE_URL` in `config.js`.
 
-## Part 3 — Publish with GitHub Pages
+## Part 3 — Set the activity password and expiration on macOS
+
+The password is hashed by the Worker and stored in D1. It is not placed in the public GitHub code. From the `backend` folder, run:
+
+```bash
+chmod +x set_access.sh
+./set_access.sh "https://YOUR-WORKER.workers.dev" "2026-10-11T23:59:00-04:00"
+```
+
+The script securely prompts for:
+
+- the Cloudflare `ADMIN_TOKEN`; and
+- the new student activity password.
+
+The second command-line argument is the password expiration date and time in ISO 8601 format. Include the time-zone offset. Running the command again changes the password and expiration and immediately invalidates previously issued sessions.
+
+If this is an update to an already deployed version, run the updated schema and redeploy before setting the password:
+
+```bash
+cd backend
+npx wrangler d1 execute csp-scheduling-game-db --remote --file=./schema.sql
+npx wrangler secret put SESSION_SECRET
+npx wrangler deploy
+./set_access.sh "https://YOUR-WORKER.workers.dev" "2026-10-11T23:59:00-04:00"
+```
+
+Students who are inactive for 20 minutes are returned to the first page and must enter their name and the current password again.
+
+## Part 4 — Publish with GitHub Pages
 
 1. Sign in to GitHub and create a new **public** repository, such as `csp-scheduling-game`.
 2. Upload `index.html`, `style.css`, `script.js`, `config.js`, and `README.md` to the repository root. You may also keep the `backend` and `offline-tools` folders in the repository, but remove `csp_private_key.pem` if it is present.
@@ -136,6 +173,7 @@ GitHub Pages is free for eligible repositories, and the backend is designed for 
 - Browser IDs estimate unique browsers, not guaranteed unique people.
 - Encryption protects stored completion details, but students must still be informed and consent.
 - Protect the admin token and private-key password.
+- Protect the session-signing secret and use a strong activity password.
 - Follow your institution's rules for student records and retention.
 
 ## Customize the problem
@@ -170,5 +208,9 @@ The game accepts every coloring that satisfies the constraints; it does not requ
 - Adjacent districts must have different colors.
 - The seven outer districts form an odd ring.
 - The central district borders all seven outer districts.
+- Central District C must be orange.
+- East District E must be blue.
+- North District N cannot be red.
+- West District W cannot be green.
 
-This structure requires four colors: the odd outer ring needs three colors, and the central district must differ from all colors used around the ring.
+This structure requires four colors and combines adjacency constraints with district-specific domain restrictions.

@@ -5,6 +5,9 @@ const gameScreen = document.querySelector("#gameScreen");
 const successScreen = document.querySelector("#successScreen");
 const nameForm = document.querySelector("#nameForm");
 const studentNameInput = document.querySelector("#studentName");
+const accessPasswordInput = document.querySelector("#accessPassword");
+const startButton = document.querySelector("#startButton");
+const consentCheckbox = document.querySelector("#consentCheckbox");
 const nameError = document.querySelector("#nameError");
 const playerName = document.querySelector("#playerName");
 const timerDisplay = document.querySelector("#timer");
@@ -47,6 +50,10 @@ let selectedColor = null;
 let draggedColor = null;
 let selectedDistrictColor = null;
 let draggedDistrictColor = null;
+let sessionToken = "";
+let inactivityTimer = null;
+
+const INACTIVITY_LIMIT_MS = 20 * 60 * 1000;
 
 const MAP_COLORS = {
   red: "#ef5350",
@@ -90,7 +97,10 @@ async function apiRequest(path, options = {}) {
     ...options,
     headers: { "Content-Type": "application/json", ...(options.headers || {}) }
   });
-  if (!response.ok) throw new Error(`Tracking request failed (${response.status}).`);
+  if (!response.ok) {
+    const details = await response.json().catch(() => ({}));
+    throw new Error(details.error || `Request failed (${response.status}).`);
+  }
   return response.json();
 }
 
@@ -158,6 +168,7 @@ async function saveEncryptedCompletion(record) {
   const encryptedRecord = await encryptCompletion(record);
   return apiRequest("/complete", {
     method: "POST",
+    headers: { "Authorization": `Bearer ${sessionToken}` },
     body: JSON.stringify({
       completionId: crypto.randomUUID(),
       encryptedRecord
@@ -180,7 +191,45 @@ function updateTimer() {
   if (startTime) timerDisplay.textContent = formatElapsed(Date.now() - startTime);
 }
 
-nameForm.addEventListener("submit", (event) => {
+function resetInactivityTimer() {
+  if (!sessionToken) return;
+  window.clearTimeout(inactivityTimer);
+  inactivityTimer = window.setTimeout(expireInactiveSession, INACTIVITY_LIMIT_MS);
+}
+
+function expireInactiveSession() {
+  window.clearInterval(timerInterval);
+  window.clearTimeout(inactivityTimer);
+  sessionToken = "";
+  studentName = "";
+  solvedSchedule = null;
+  solvedAustraliaColoring = null;
+  solvedDistrictColoring = null;
+  checks = 0;
+  attemptCount.textContent = "0";
+  resetSchedule();
+  resetMap();
+  resetDistrictMap();
+  successScreen.hidden = true;
+  gameScreen.hidden = true;
+  welcomeScreen.hidden = false;
+  schedulingQuestion.hidden = true;
+  districtQuestion.hidden = true;
+  mapQuestion.hidden = false;
+  questionProgress.textContent = "Question 1 of 3";
+  studentNameInput.value = "";
+  accessPasswordInput.value = "";
+  consentCheckbox.checked = false;
+  nameError.textContent = "Your session ended after 20 minutes of inactivity. Enter your name and the current password to begin again.";
+  studentNameInput.focus();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+["pointerdown", "keydown", "touchstart", "scroll"].forEach((eventName) => {
+  document.addEventListener(eventName, resetInactivityTimer, { passive: true });
+});
+
+nameForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   studentName = cleanName(studentNameInput.value);
   if (studentName.length < 2) {
@@ -189,14 +238,48 @@ nameForm.addEventListener("submit", (event) => {
     return;
   }
 
+  if (!accessPasswordInput.value) {
+    nameError.textContent = "Please enter the activity password. Contact the instructor if you do not have it.";
+    accessPasswordInput.focus();
+    return;
+  }
+
+  const originalButtonText = startButton.textContent;
+  startButton.disabled = true;
+  startButton.textContent = "Checking…";
   nameError.textContent = "";
-  playerName.textContent = studentName;
-  welcomeScreen.hidden = true;
-  gameScreen.hidden = false;
-  startTime = Date.now();
-  timerInterval = window.setInterval(updateTimer, 1000);
-  updateTimer();
-  recordVisit();
+
+  try {
+    const authentication = await apiRequest("/auth", {
+      method: "POST",
+      body: JSON.stringify({ password: accessPasswordInput.value })
+    });
+    sessionToken = authentication.token;
+    accessPasswordInput.value = "";
+    playerName.textContent = studentName;
+    welcomeScreen.hidden = true;
+    successScreen.hidden = true;
+    gameScreen.hidden = false;
+    mapQuestion.hidden = false;
+    districtQuestion.hidden = true;
+    schedulingQuestion.hidden = true;
+    questionProgress.textContent = "Question 1 of 3";
+    startTime = Date.now();
+    window.clearInterval(timerInterval);
+    timerInterval = window.setInterval(updateTimer, 1000);
+    updateTimer();
+    resetInactivityTimer();
+    recordVisit();
+  } catch (error) {
+    sessionToken = "";
+    nameError.textContent = error.message.includes("Incorrect")
+      ? "Incorrect activity password. Please try again or contact the instructor."
+      : `${error.message} Contact the instructor if you need access.`;
+    accessPasswordInput.select();
+  } finally {
+    startButton.disabled = false;
+    startButton.textContent = originalButtonText;
+  }
 });
 
 function getCardFromEvent(event) {
@@ -533,7 +616,12 @@ function getDistrictColoring() {
 function evaluateDistrictMap(coloring) {
   const incomplete = Object.entries(coloring).filter(([, color]) => !color).map(([district]) => district);
   const conflicts = DISTRICT_ADJACENCIES.filter(([first, second]) => coloring[first] && coloring[first] === coloring[second]);
-  return { incomplete, conflicts };
+  const restrictions = [];
+  if (coloring.C && coloring.C !== "orange") restrictions.push(["C", "must be orange"]);
+  if (coloring.E && coloring.E !== "blue") restrictions.push(["E", "must be blue"]);
+  if (coloring.N === "red") restrictions.push(["N", "cannot be red"]);
+  if (coloring.W === "green") restrictions.push(["W", "cannot be green"]);
+  return { incomplete, conflicts, restrictions };
 }
 
 function resetDistrictMap() {
@@ -566,11 +654,16 @@ checkDistrictButton.addEventListener("click", () => {
     return;
   }
 
-  if (results.conflicts.length) {
-    const names = new Set(results.conflicts.flat());
+  if (results.conflicts.length || results.restrictions.length) {
+    const names = new Set([
+      ...results.conflicts.flat(),
+      ...results.restrictions.map(([district]) => district)
+    ]);
     districtRegions.filter((region) => names.has(region.dataset.district)).forEach((region) => region.classList.add("conflict"));
-    const pairs = results.conflicts.map(([first, second]) => `${first}–${second}`).join(", ");
-    setDistrictFeedback(`Not consistent yet. These neighboring districts share a color: ${pairs}.`, "error");
+    const messages = [];
+    if (results.conflicts.length) messages.push(`same-color borders: ${results.conflicts.map(([first, second]) => `${first}–${second}`).join(", ")}`);
+    if (results.restrictions.length) messages.push(`district restrictions: ${results.restrictions.map(([district, rule]) => `${district} ${rule}`).join(", ")}`);
+    setDistrictFeedback(`Not consistent yet. ${messages.join("; ")}.`, "error");
     return;
   }
 
@@ -641,6 +734,7 @@ document.querySelector("#playAgainButton").addEventListener("click", () => {
   mapQuestion.hidden = false;
   questionProgress.textContent = "Question 1 of 3";
   updateTimer();
+  resetInactivityTimer();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
