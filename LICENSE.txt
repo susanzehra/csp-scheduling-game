@@ -1,6 +1,6 @@
-## Copyright and Usage Notice
+Copyright and Usage Notice
 
-**Copyright © 2026 Susan Zehra. All rights reserved.**
+Copyright © 2026 Susan Zehra. All rights reserved.
 
 This source code may not be copied, modified, adapted, distributed, published, reproduced, incorporated into another project, or reused for any purpose without prior written permission from the copyright owner.
 
@@ -8,4 +8,4 @@ Students and other users may access and use the hosted application for its inten
 
 Any use of this source code without prior written permission is unauthorized and may constitute copyright infringement.
 
-For permission requests, contact: **szehra@odu.edu**
+For permission requests, contact: szehra@odu.edu
