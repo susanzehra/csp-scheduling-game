@@ -1,10 +1,11 @@
-Copyright © 2026 Susan Zehra. All rights reserved.
+## Copyright and Usage Notice
 
-This source code may not be copied, modified, distributed, published, or reused
-without prior written permission from the copyright owner.
+**Copyright © 2026 Susan Zehra. All rights reserved.**
 
-Students may access and use the hosted application for educational purposes.
-Permission to view or use the application does not grant permission to reuse
-its source code.
+This source code may not be copied, modified, adapted, distributed, published, reproduced, incorporated into another project, or reused for any purpose without prior written permission from the copyright owner.
 
-For permission requests, contact: szehra@odu.edu
+Students and other users may access and use the hosted application for its intended educational purpose. Permission to access, view, or interact with the application does not grant permission to download, reproduce, modify, redistribute, or reuse its source code.
+
+Any use of this source code without prior written permission is unauthorized and may constitute copyright infringement.
+
+For permission requests, contact: **szehra@odu.edu**
