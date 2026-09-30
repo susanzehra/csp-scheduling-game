@@ -26,6 +26,12 @@ const colorSwatches = [...document.querySelectorAll(".color-swatch")];
 const mapFeedback = document.querySelector("#mapFeedback");
 const checkMapButton = document.querySelector("#checkMapButton");
 const resetMapButton = document.querySelector("#resetMapButton");
+const districtQuestion = document.querySelector("#districtQuestion");
+const districtRegions = [...document.querySelectorAll(".district-region")];
+const districtSwatches = [...document.querySelectorAll(".district-color-swatch")];
+const districtFeedback = document.querySelector("#districtFeedback");
+const checkDistrictButton = document.querySelector("#checkDistrictButton");
+const resetDistrictButton = document.querySelector("#resetDistrictButton");
 const config = window.CSP_GAME_CONFIG || {};
 
 let activeCard = null;
@@ -35,19 +41,31 @@ let timerInterval = null;
 let checks = 0;
 let studentName = "";
 let solvedSchedule = null;
+let solvedAustraliaColoring = null;
+let solvedDistrictColoring = null;
 let selectedColor = null;
 let draggedColor = null;
+let selectedDistrictColor = null;
+let draggedDistrictColor = null;
 
 const MAP_COLORS = {
   red: "#ef5350",
   green: "#43a047",
-  blue: "#4285f4"
+  blue: "#4285f4",
+  orange: "#f28c28"
 };
 
 const MAP_ADJACENCIES = [
   ["WA", "NT"], ["WA", "SA"], ["NT", "SA"], ["NT", "QLD"],
   ["SA", "QLD"], ["SA", "NSW"], ["SA", "VIC"], ["QLD", "NSW"],
   ["NSW", "VIC"]
+];
+
+const DISTRICT_ADJACENCIES = [
+  ["NW", "N"], ["N", "NE"], ["NE", "E"], ["E", "S"],
+  ["S", "SW"], ["SW", "W"], ["W", "NW"],
+  ["C", "NW"], ["C", "N"], ["C", "NE"], ["C", "E"],
+  ["C", "S"], ["C", "SW"], ["C", "W"]
 ];
 
 function apiConfigured() {
@@ -313,14 +331,14 @@ checkButton.addEventListener("click", () => {
 
   setFeedback("Excellent—your assignment is complete and consistent!", "good");
   solvedSchedule = { ...assignments };
-  window.setTimeout(showMapQuestion, 650);
+  window.setTimeout(() => showSuccess(solvedSchedule, solvedAustraliaColoring, solvedDistrictColoring), 650);
 });
 
-function showMapQuestion() {
-  schedulingQuestion.hidden = true;
-  mapQuestion.hidden = false;
-  questionProgress.textContent = "Question 2 of 2";
-  mapQuestion.scrollIntoView({ behavior: "smooth", block: "start" });
+function showSchedulingQuestion() {
+  districtQuestion.hidden = true;
+  schedulingQuestion.hidden = false;
+  questionProgress.textContent = "Question 3 of 3";
+  schedulingQuestion.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function resetSchedule() {
@@ -440,10 +458,128 @@ checkMapButton.addEventListener("click", () => {
   }
 
   setMapFeedback("Excellent—every region is colored and all neighboring regions differ!", "good");
-  window.setTimeout(() => showSuccess(solvedSchedule, coloring), 650);
+  solvedAustraliaColoring = { ...coloring };
+  window.setTimeout(showDistrictQuestion, 650);
 });
 
-async function showSuccess(assignments, coloring) {
+function showDistrictQuestion() {
+  mapQuestion.hidden = true;
+  districtQuestion.hidden = false;
+  questionProgress.textContent = "Question 2 of 3";
+  districtQuestion.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setDistrictFeedback(message, type = "") {
+  districtFeedback.textContent = message;
+  districtFeedback.className = `feedback${type ? ` ${type}` : ""}`;
+}
+
+function chooseDistrictColor(color) {
+  selectedDistrictColor = color;
+  districtSwatches.forEach((swatch) => {
+    swatch.classList.toggle("selected", swatch.dataset.color === color);
+    swatch.setAttribute("aria-pressed", String(swatch.dataset.color === color));
+  });
+}
+
+function applyDistrictColor(regionElement, color) {
+  if (!regionElement || !MAP_COLORS[color]) return;
+  regionElement.dataset.color = color;
+  regionElement.querySelector("polygon").style.fill = MAP_COLORS[color];
+  regionElement.classList.remove("conflict");
+  regionElement.setAttribute("aria-label", `${regionElement.dataset.district} district, colored ${color}`);
+  setDistrictFeedback("Map changed. Color every district, then check your map.");
+}
+
+districtSwatches.forEach((swatch) => {
+  swatch.setAttribute("aria-pressed", "false");
+  swatch.addEventListener("click", () => chooseDistrictColor(swatch.dataset.color));
+  swatch.addEventListener("dragstart", (event) => {
+    draggedDistrictColor = swatch.dataset.color;
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("text/plain", draggedDistrictColor);
+  });
+  swatch.addEventListener("dragend", () => { draggedDistrictColor = null; });
+});
+
+districtRegions.forEach((region) => {
+  region.addEventListener("click", () => {
+    if (selectedDistrictColor) applyDistrictColor(region, selectedDistrictColor);
+    else setDistrictFeedback("Choose a color first, then select a district.", "error");
+  });
+  region.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && selectedDistrictColor) {
+      event.preventDefault();
+      applyDistrictColor(region, selectedDistrictColor);
+    }
+  });
+  region.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    region.classList.add("drag-over");
+  });
+  region.addEventListener("dragleave", () => region.classList.remove("drag-over"));
+  region.addEventListener("drop", (event) => {
+    event.preventDefault();
+    region.classList.remove("drag-over");
+    const color = event.dataTransfer.getData("text/plain") || draggedDistrictColor;
+    applyDistrictColor(region, color);
+  });
+});
+
+function getDistrictColoring() {
+  return Object.fromEntries(districtRegions.map((region) => [region.dataset.district, region.dataset.color || ""]));
+}
+
+function evaluateDistrictMap(coloring) {
+  const incomplete = Object.entries(coloring).filter(([, color]) => !color).map(([district]) => district);
+  const conflicts = DISTRICT_ADJACENCIES.filter(([first, second]) => coloring[first] && coloring[first] === coloring[second]);
+  return { incomplete, conflicts };
+}
+
+function resetDistrictMap() {
+  selectedDistrictColor = null;
+  draggedDistrictColor = null;
+  districtSwatches.forEach((swatch) => {
+    swatch.classList.remove("selected");
+    swatch.setAttribute("aria-pressed", "false");
+  });
+  districtRegions.forEach((region) => {
+    delete region.dataset.color;
+    region.classList.remove("conflict", "drag-over");
+    region.querySelector("polygon").style.removeProperty("fill");
+    region.setAttribute("aria-label", `${region.dataset.district} district, not colored`);
+  });
+  setDistrictFeedback("Color all eight districts, then check your map.");
+}
+
+resetDistrictButton.addEventListener("click", resetDistrictMap);
+
+checkDistrictButton.addEventListener("click", () => {
+  checks += 1;
+  attemptCount.textContent = String(checks);
+  districtRegions.forEach((region) => region.classList.remove("conflict"));
+  const coloring = getDistrictColoring();
+  const results = evaluateDistrictMap(coloring);
+
+  if (results.incomplete.length) {
+    setDistrictFeedback(`Color every district first. Still missing: ${results.incomplete.join(", ")}.`, "error");
+    return;
+  }
+
+  if (results.conflicts.length) {
+    const names = new Set(results.conflicts.flat());
+    districtRegions.filter((region) => names.has(region.dataset.district)).forEach((region) => region.classList.add("conflict"));
+    const pairs = results.conflicts.map(([first, second]) => `${first}–${second}`).join(", ");
+    setDistrictFeedback(`Not consistent yet. These neighboring districts share a color: ${pairs}.`, "error");
+    return;
+  }
+
+  setDistrictFeedback("Excellent—this more connected map is complete and consistent!", "good");
+  solvedDistrictColoring = { ...coloring };
+  window.setTimeout(showSchedulingQuestion, 650);
+});
+
+async function showSuccess(assignments, australiaColoring, districtColoring) {
   window.clearInterval(timerInterval);
   const elapsed = Date.now() - startTime;
   const completedAt = new Date();
@@ -452,7 +588,10 @@ async function showSuccess(assignments, coloring) {
     .map(([employee, shift]) => `${employee}→${shift}`)
     .join(", ");
   const mapColoring = ["WA", "NT", "SA", "QLD", "NSW", "VIC", "TAS"]
-    .map((region) => `${region}→${coloring[region][0].toUpperCase()}`)
+    .map((region) => `${region}→${australiaColoring[region][0].toUpperCase()}`)
+    .join(", ");
+  const districtMapColoring = ["NW", "N", "NE", "E", "S", "SW", "W", "C"]
+    .map((district) => `${district}→${districtColoring[district][0].toUpperCase()}`)
     .join(", ");
 
   document.querySelector("#certificateName").textContent = studentName;
@@ -460,6 +599,7 @@ async function showSuccess(assignments, coloring) {
   document.querySelector("#completionTime").textContent = formatElapsed(elapsed);
   document.querySelector("#finalSchedule").textContent = scheduleByShift;
   document.querySelector("#finalMapColoring").textContent = mapColoring;
+  document.querySelector("#finalDistrictColoring").textContent = districtMapColoring;
   recordStatus.textContent = "Securely recording this completion…";
   gameScreen.hidden = true;
   successScreen.hidden = false;
@@ -472,7 +612,8 @@ async function showSuccess(assignments, coloring) {
       completedAtLocal: completedAt.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
       elapsedSeconds: Math.max(0, Math.floor(elapsed / 1000)),
       schedule: scheduleByShift,
-      mapColoring
+      australiaMapColoring: mapColoring,
+      districtMapColoring
     });
     recordStatus.textContent = "✓ Your encrypted completion record was saved successfully.";
     await refreshStats();
@@ -485,16 +626,20 @@ document.querySelector("#printButton").addEventListener("click", () => window.pr
 document.querySelector("#playAgainButton").addEventListener("click", () => {
   resetSchedule();
   resetMap();
+  resetDistrictMap();
   solvedSchedule = null;
+  solvedAustraliaColoring = null;
+  solvedDistrictColoring = null;
   checks = 0;
   attemptCount.textContent = "0";
   startTime = Date.now();
   timerInterval = window.setInterval(updateTimer, 1000);
   successScreen.hidden = true;
   gameScreen.hidden = false;
-  schedulingQuestion.hidden = false;
-  mapQuestion.hidden = true;
-  questionProgress.textContent = "Question 1 of 2";
+  schedulingQuestion.hidden = true;
+  districtQuestion.hidden = true;
+  mapQuestion.hidden = false;
+  questionProgress.textContent = "Question 1 of 3";
   updateTimer();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });

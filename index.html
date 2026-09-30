@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A two-part interactive constraint satisfaction challenge for introductory AI students.">
-  <title>Two-Part CSP Challenge</title>
-  <link rel="stylesheet" href="style.css?v=20260930-6">
+  <meta name="description" content="A three-part interactive constraint satisfaction challenge for introductory AI students.">
+  <title>Three-Part CSP Challenge</title>
+  <link rel="stylesheet" href="style.css?v=20260930-7">
 </head>
 <body>
   <main class="page-shell">
     <header class="hero">
       <div>
         <p class="eyebrow">CS 480/580 • Constraint Satisfaction Problems</p>
-        <h1>Two-Part CSP Challenge</h1>
-        <p class="subtitle">Solve a scheduling problem and an Australia map-coloring problem.</p>
+        <h1>Three-Part CSP Challenge</h1>
+        <p class="subtitle">Solve two map-coloring problems and one employee-scheduling problem.</p>
         <div class="public-stats" aria-label="Game activity counters">
           <span><strong id="visitCount">—</strong> visitors</span>
           <span><strong id="playCount">—</strong> successful completions</span>
@@ -26,7 +26,7 @@
       <div class="welcome-copy">
         <span class="step-label">Before you begin</span>
         <h2>Enter your name</h2>
-        <p>Your name will appear on the completion screen after you solve both CSPs.</p>
+        <p>Your name will appear on the completion screen after you solve all three CSPs.</p>
       </div>
       <form id="nameForm" class="name-form">
         <label for="studentName">Student name</label>
@@ -46,15 +46,15 @@
     <section id="gameScreen" class="game-screen" hidden>
       <div class="status-strip">
         <div><span class="status-label">Student</span><strong id="playerName"></strong></div>
-        <div><span class="status-label">Progress</span><strong id="questionProgress">Question 1 of 2</strong></div>
+        <div><span class="status-label">Progress</span><strong id="questionProgress">Question 1 of 3</strong></div>
         <div><span class="status-label">Elapsed time</span><strong id="timer">00:00</strong></div>
         <div><span class="status-label">Checks</span><strong id="attemptCount">0</strong></div>
       </div>
 
-      <section id="schedulingQuestion" class="question-section">
+      <section id="schedulingQuestion" class="question-section" hidden>
       <section class="panel scenario-panel">
         <div class="scenario-text">
-          <span class="step-label">Real-world scenario</span>
+          <span class="step-label">Question 3 • Scheduling</span>
           <h2>Staff the five call-center shifts</h2>
           <p>A call center has five employees—<strong>A, B, C, D, and E</strong>—and five daily shifts. Assign each employee to exactly one shift while obeying all rules. Several rules depend on one another, so test your choices carefully.</p>
         </div>
@@ -114,10 +114,10 @@
       </div>
       </section>
 
-      <section id="mapQuestion" class="question-section" hidden>
+      <section id="mapQuestion" class="question-section">
         <section class="panel scenario-panel">
           <div class="scenario-text">
-            <span class="step-label">Question 2 • Map coloring</span>
+            <span class="step-label">Question 1 • Map coloring</span>
             <h2>Color the regions of Australia</h2>
             <p>A map designer needs to color Australia so neighboring regions are easy to distinguish. Assign one of three colors to every region. Regions that share a land border must have different colors.</p>
           </div>
@@ -178,6 +178,75 @@
           </section>
         </div>
       </section>
+
+      <section id="districtQuestion" class="question-section" hidden>
+        <section class="panel scenario-panel">
+          <div class="scenario-text">
+            <span class="step-label">Question 2 • Advanced map coloring</span>
+            <h2>Color the emergency-response districts</h2>
+            <p>A regional emergency-management office divides a service area into eight connected districts. Assign colors so neighboring districts are easy to distinguish on operational maps. This map has more connections than Australia, including a central district that borders every outer district.</p>
+          </div>
+          <div class="mini-flow" aria-label="Emergency districts receive colors that satisfy border constraints">
+            <span>8 districts</span><b>→</b><span>More borders</span><b>→</b><span>Valid map</span>
+          </div>
+        </section>
+
+        <div class="game-grid map-game-grid">
+          <section class="panel rules-panel">
+            <span class="step-label orange">Constraints</span>
+            <h2>District-map rules</h2>
+            <ul class="constraint-list map-rule-list">
+              <li><span class="rule-icon">○</span>Color all eight districts.</li>
+              <li><span class="rule-icon">○</span>Use only red, green, blue, or orange.</li>
+              <li><span class="rule-icon">○</span>Districts sharing a border cannot use the same color.</li>
+              <li><span class="rule-icon">○</span>The central district borders every outer district.</li>
+              <li><span class="rule-icon">○</span>Each outer district also borders the outer district on either side.</li>
+            </ul>
+            <div class="tip-box"><strong>Why it is harder:</strong> the seven outer districts form a connected ring, while the central district constrains every choice around it.</div>
+          </section>
+
+          <section class="panel workspace-panel map-workspace">
+            <div class="workspace-heading">
+              <div>
+                <span class="step-label green">Your task</span>
+                <h2>Color the service-area map</h2>
+              </div>
+              <button id="resetDistrictButton" class="text-button" type="button">↻ Reset Map</button>
+            </div>
+
+            <p class="palette-label">Choose or drag a color:</p>
+            <div class="color-palette" role="group" aria-label="District-map colors">
+              <button class="district-color-swatch swatch-red" draggable="true" data-color="red" type="button"><span></span>Red</button>
+              <button class="district-color-swatch swatch-green" draggable="true" data-color="green" type="button"><span></span>Green</button>
+              <button class="district-color-swatch swatch-blue" draggable="true" data-color="blue" type="button"><span></span>Blue</button>
+              <button class="district-color-swatch swatch-orange" draggable="true" data-color="orange" type="button"><span></span>Orange</button>
+            </div>
+
+            <div class="map-frame district-map-frame">
+              <svg class="australia-map district-map" viewBox="0 0 660 510" role="img" aria-labelledby="districtMapTitle districtMapDescription">
+                <title id="districtMapTitle">Eight connected emergency-response districts</title>
+                <desc id="districtMapDescription">Seven outer districts form a ring around one central district. The central district shares a border with every outer district.</desc>
+                <g class="district-region" data-district="NW" tabindex="0" role="button" aria-label="Northwest district, not colored"><polygon points="70,120 250,45 300,130 215,175"></polygon></g>
+                <g class="district-region" data-district="N" tabindex="0" role="button" aria-label="North district, not colored"><polygon points="250,45 500,60 430,150 300,130"></polygon></g>
+                <g class="district-region" data-district="NE" tabindex="0" role="button" aria-label="Northeast district, not colored"><polygon points="500,60 620,230 475,250 430,150"></polygon></g>
+                <g class="district-region" data-district="E" tabindex="0" role="button" aria-label="East district, not colored"><polygon points="620,230 540,420 410,340 475,250"></polygon></g>
+                <g class="district-region" data-district="S" tabindex="0" role="button" aria-label="South district, not colored"><polygon points="540,420 300,470 290,360 410,340"></polygon></g>
+                <g class="district-region" data-district="SW" tabindex="0" role="button" aria-label="Southwest district, not colored"><polygon points="300,470 70,380 185,280 290,360"></polygon></g>
+                <g class="district-region" data-district="W" tabindex="0" role="button" aria-label="West district, not colored"><polygon points="70,380 70,120 215,175 185,280"></polygon></g>
+                <g class="district-region central-region" data-district="C" tabindex="0" role="button" aria-label="Central district, not colored"><polygon points="215,175 300,130 430,150 475,250 410,340 290,360 185,280"></polygon></g>
+                <g class="map-labels" aria-hidden="true">
+                  <text x="185" y="105">NW</text><text x="365" y="91">N</text><text x="525" y="155">NE</text>
+                  <text x="535" y="300">E</text><text x="400" y="411">S</text><text x="195" y="388">SW</text>
+                  <text x="120" y="250">W</text><text x="330" y="250">C</text>
+                </g>
+              </svg>
+            </div>
+            <p class="accessibility-note">Tip: Begin with the central district, then work around the outer ring.</p>
+            <button id="checkDistrictButton" class="primary-button check-button" type="button">Check My District Map</button>
+            <div id="districtFeedback" class="feedback" role="status" aria-live="polite">Color all eight districts, then check your map.</div>
+          </section>
+        </div>
+      </section>
     </section>
 
     <section id="successScreen" class="success-screen" hidden>
@@ -185,17 +254,18 @@
       <div class="certificate">
         <p class="certificate-kicker">CS 480/580 • Introduction to Artificial Intelligence</p>
         <div class="success-icon" aria-hidden="true">✓</div>
-        <h2>Two Constraint Satisfaction Problems Solved!</h2>
+        <h2>Three Constraint Satisfaction Problems Solved!</h2>
         <p class="certificate-copy">This certifies that</p>
         <p id="certificateName" class="certificate-name"></p>
-        <p class="certificate-copy">successfully completed the <strong>Scheduling and Australia Map-Coloring Challenge</strong> by creating two complete and consistent assignments.</p>
+        <p class="certificate-copy">successfully completed the <strong>Two Map-Coloring and Employee-Scheduling Challenge</strong> by creating three complete and consistent assignments.</p>
         <div class="certificate-details">
           <div><span>Completed</span><strong id="completionDate"></strong></div>
           <div><span>Time used</span><strong id="completionTime"></strong></div>
           <div><span>Schedule</span><strong id="finalSchedule"></strong></div>
-          <div><span>Map coloring</span><strong id="finalMapColoring"></strong></div>
+          <div><span>Australia map</span><strong id="finalMapColoring"></strong></div>
+          <div><span>District map</span><strong id="finalDistrictColoring"></strong></div>
         </div>
-        <p class="certificate-note">In both problems, every variable has a value and every constraint is satisfied.</p>
+        <p class="certificate-note">In all three problems, every variable has a value and every constraint is satisfied.</p>
         <p id="recordStatus" class="record-status"></p>
       </div>
       <div class="success-actions">
@@ -204,7 +274,7 @@
       </div>
     </section>
   </main>
-  <script src="config.js?v=20260930-6"></script>
-  <script src="script.js?v=20260930-6"></script>
+  <script src="config.js?v=20260930-7"></script>
+  <script src="script.js?v=20260930-7"></script>
 </body>
 </html>

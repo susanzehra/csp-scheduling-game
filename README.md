@@ -1,14 +1,15 @@
-# Two-Part CSP Challenge
+# Three-Part CSP Challenge
 
-A browser-based game for introducing constraint satisfaction problems (CSPs) through employee scheduling and Australia map coloring. The public game is hosted on GitHub Pages. An optional Cloudflare Worker and D1 database provide anonymous visitor counts and encrypted completion records.
+A browser-based game for introducing constraint satisfaction problems (CSPs) through Australia map coloring, advanced district map coloring, and employee scheduling. The public game is hosted on GitHub Pages. An optional Cloudflare Worker and D1 database provide anonymous visitor counts and encrypted completion records.
 
 ## What students do
 
 1. Enter their name.
-2. Assign Employees A–E to Shifts 1–5 and satisfy all scheduling constraints.
-3. Color the seven Australian regions with red, green, or blue so adjacent regions differ.
-4. Revise any inconsistent assignment or map coloring.
-5. Receive a personalized success screen showing their name, completion date/time, elapsed time, valid schedule, and valid map coloring.
+2. Color the seven Australian regions with red, green, or blue so adjacent regions differ.
+3. Solve a harder eight-district coloring problem using four colors.
+4. Assign Employees A–E to Shifts 1–5 and satisfy all scheduling constraints.
+5. Revise any inconsistent assignment or map coloring.
+6. Receive a personalized success screen showing their name, completion date/time, elapsed time, valid schedule, and both valid map colorings.
 
 Students can drag cards or use the click-an-employee, click-a-shift alternative. The page is responsive and works on phones, tablets, and computers.
 
@@ -26,7 +27,7 @@ Then visit `http://localhost:8000`.
 
 ## Privacy and consent
 
-Before beginning, students must consent to the collection of their completion information. The browser encrypts the student's name, completion date/time, elapsed time, schedule, and map coloring with the instructor's public key before transmission. Cloudflare stores only ciphertext and cannot decrypt those details. The private key stays offline with the instructor.
+Before beginning, students must consent to the collection of their completion information. The browser encrypts the student's name, completion date/time, elapsed time, schedule, and two map colorings with the instructor's public key before transmission. Cloudflare stores only ciphertext and cannot decrypt those details. The private key stays offline with the instructor.
 
 After a student accepts the consent notice and starts the game, the site uses a random identifier stored in that browser to estimate unique visitors. It does not intentionally store IP addresses in the application database. The public page reveals only aggregate visitor and completion totals.
 
@@ -100,7 +101,7 @@ You need a free Cloudflare account and Node.js installed.
    `https://YOUR-USERNAME.github.io/csp-scheduling-game/`
 8. Share that address with students or place it in Canvas.
 
-After uploading an updated version, allow GitHub Pages a minute or two to redeploy. If an older version still appears, use a hard refresh (`Ctrl+Shift+R` on Windows or `Cmd+Shift+R` on macOS). The included version query strings also force browsers to retrieve the current two-question files.
+After uploading an updated version, allow GitHub Pages a minute or two to redeploy. If an older version still appears, use a hard refresh (`Ctrl+Shift+R` on Windows or `Cmd+Shift+R` on macOS). The included version query strings also force browsers to retrieve the current three-question files.
 
 ## Download the encrypted completion file
 
@@ -161,3 +162,13 @@ These rules have one valid schedule: **D→1, C→2, A→3, E→4, B→5**. The 
 - Tasmania has no land-border constraint and may use any available color.
 
 The game accepts every coloring that satisfies the constraints; it does not require one predetermined pattern.
+
+## Advanced district map-coloring rules
+
+- Color the seven outer districts and the central district.
+- Use only red, green, blue, or orange.
+- Adjacent districts must have different colors.
+- The seven outer districts form an odd ring.
+- The central district borders all seven outer districts.
+
+This structure requires four colors: the odd outer ring needs three colors, and the central district must differ from all colors used around the ring.
