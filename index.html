@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A simple drag-and-drop constraint satisfaction scheduling game for introductory AI students.">
-  <title>CSP Scheduling Challenge</title>
-  <link rel="stylesheet" href="style.css?v=20260929-5">
+  <meta name="description" content="A two-part interactive constraint satisfaction challenge for introductory AI students.">
+  <title>Two-Part CSP Challenge</title>
+  <link rel="stylesheet" href="style.css?v=20260930-6">
 </head>
 <body>
   <main class="page-shell">
     <header class="hero">
       <div>
         <p class="eyebrow">CS 480/580 • Constraint Satisfaction Problems</p>
-        <h1>CSP Scheduling Challenge</h1>
-        <p class="subtitle">Build a legal call-center schedule by satisfying every constraint.</p>
+        <h1>Two-Part CSP Challenge</h1>
+        <p class="subtitle">Solve a scheduling problem and an Australia map-coloring problem.</p>
         <div class="public-stats" aria-label="Game activity counters">
           <span><strong id="visitCount">—</strong> visitors</span>
           <span><strong id="playCount">—</strong> successful completions</span>
@@ -26,7 +26,7 @@
       <div class="welcome-copy">
         <span class="step-label">Before you begin</span>
         <h2>Enter your name</h2>
-        <p>Your name will appear on the completion screen after you solve the CSP.</p>
+        <p>Your name will appear on the completion screen after you solve both CSPs.</p>
       </div>
       <form id="nameForm" class="name-form">
         <label for="studentName">Student name</label>
@@ -36,7 +36,7 @@
         </div>
         <label class="consent-row" for="consentCheckbox">
           <input id="consentCheckbox" type="checkbox" required>
-          <span>I consent to having my name, completion date/time, elapsed time, and final schedule recorded for this course activity. These details will be encrypted in my browser before being sent. The site also uses a random anonymous browser ID to estimate unique visitors.</span>
+          <span>I consent to having my name, completion date/time, elapsed time, and final solutions recorded for this course activity. These details will be encrypted in my browser before being sent. The site also uses a random anonymous browser ID to estimate unique visitors.</span>
         </label>
         <p class="privacy-note"><strong>Privacy:</strong> The public page displays only total counts. Student names and completion details are never displayed publicly and cannot be decrypted without the instructor’s offline private key.</p>
         <p id="nameError" class="form-error" role="alert"></p>
@@ -46,10 +46,12 @@
     <section id="gameScreen" class="game-screen" hidden>
       <div class="status-strip">
         <div><span class="status-label">Student</span><strong id="playerName"></strong></div>
+        <div><span class="status-label">Progress</span><strong id="questionProgress">Question 1 of 2</strong></div>
         <div><span class="status-label">Elapsed time</span><strong id="timer">00:00</strong></div>
         <div><span class="status-label">Checks</span><strong id="attemptCount">0</strong></div>
       </div>
 
+      <section id="schedulingQuestion" class="question-section">
       <section class="panel scenario-panel">
         <div class="scenario-text">
           <span class="step-label">Real-world scenario</span>
@@ -110,6 +112,72 @@
           <div id="feedback" class="feedback" role="status" aria-live="polite">Assign all five employees, then check your schedule.</div>
         </section>
       </div>
+      </section>
+
+      <section id="mapQuestion" class="question-section" hidden>
+        <section class="panel scenario-panel">
+          <div class="scenario-text">
+            <span class="step-label">Question 2 • Map coloring</span>
+            <h2>Color the regions of Australia</h2>
+            <p>A map designer needs to color Australia so neighboring regions are easy to distinguish. Assign one of three colors to every region. Regions that share a land border must have different colors.</p>
+          </div>
+          <div class="mini-flow" aria-label="Regions receive colors that satisfy border constraints">
+            <span>Regions</span><b>→</b><span>Border rules</span><b>→</b><span>Valid map</span>
+          </div>
+        </section>
+
+        <div class="game-grid map-game-grid">
+          <section class="panel rules-panel">
+            <span class="step-label orange">Constraints</span>
+            <h2>Map rules</h2>
+            <ul class="constraint-list map-rule-list">
+              <li><span class="rule-icon">○</span>Color all seven regions.</li>
+              <li><span class="rule-icon">○</span>Use only red, green, or blue.</li>
+              <li><span class="rule-icon">○</span>Regions sharing a land border cannot use the same color.</li>
+              <li><span class="rule-icon">○</span>Tasmania has no land border with another region, so it may use any color.</li>
+            </ul>
+            <div class="tip-box"><strong>CSP idea:</strong> regions are variables, colors are domain values, and shared borders create constraints.</div>
+          </section>
+
+          <section class="panel workspace-panel map-workspace">
+            <div class="workspace-heading">
+              <div>
+                <span class="step-label green">Your task</span>
+                <h2>Color the map</h2>
+              </div>
+              <button id="resetMapButton" class="text-button" type="button">↻ Reset Map</button>
+            </div>
+
+            <p class="palette-label">Choose or drag a color:</p>
+            <div class="color-palette" role="group" aria-label="Map colors">
+              <button class="color-swatch swatch-red" draggable="true" data-color="red" type="button"><span></span>Red</button>
+              <button class="color-swatch swatch-green" draggable="true" data-color="green" type="button"><span></span>Green</button>
+              <button class="color-swatch swatch-blue" draggable="true" data-color="blue" type="button"><span></span>Blue</button>
+            </div>
+
+            <div class="map-frame">
+              <svg class="australia-map" viewBox="0 0 660 500" role="img" aria-labelledby="mapTitle mapDescription">
+                <title id="mapTitle">Simplified political map of Australia</title>
+                <desc id="mapDescription">Interactive regions for Western Australia, Northern Territory, South Australia, Queensland, New South Wales, Victoria, and Tasmania.</desc>
+                <g class="map-region" data-region="WA" tabindex="0" role="button" aria-label="Western Australia, not colored"><polygon points="40,120 225,75 245,220 245,350 95,390 45,320"></polygon></g>
+                <g class="map-region" data-region="NT" tabindex="0" role="button" aria-label="Northern Territory, not colored"><polygon points="225,75 390,65 390,220 245,220"></polygon></g>
+                <g class="map-region" data-region="SA" tabindex="0" role="button" aria-label="South Australia, not colored"><polygon points="245,220 390,220 455,330 245,350"></polygon></g>
+                <g class="map-region" data-region="QLD" tabindex="0" role="button" aria-label="Queensland, not colored"><polygon points="390,65 535,90 610,225 455,240 390,220"></polygon></g>
+                <g class="map-region" data-region="NSW" tabindex="0" role="button" aria-label="New South Wales, not colored"><polygon points="455,240 610,225 590,340 470,350 455,330"></polygon></g>
+                <g class="map-region" data-region="VIC" tabindex="0" role="button" aria-label="Victoria, not colored"><polygon points="455,330 470,350 590,340 535,405 480,390"></polygon></g>
+                <g class="map-region" data-region="TAS" tabindex="0" role="button" aria-label="Tasmania, not colored"><polygon points="495,430 555,438 540,480 500,475"></polygon></g>
+                <g class="map-labels" aria-hidden="true">
+                  <text x="132" y="245">WA</text><text x="302" y="155">NT</text><text x="333" y="294">SA</text>
+                  <text x="490" y="163">QLD</text><text x="527" y="294">NSW</text><text x="520" y="374">VIC</text><text x="525" y="463">TAS</text>
+                </g>
+              </svg>
+            </div>
+            <p class="accessibility-note">Tip: Click a color and then a region, or drag a color onto a region.</p>
+            <button id="checkMapButton" class="primary-button check-button" type="button">Check My Map</button>
+            <div id="mapFeedback" class="feedback" role="status" aria-live="polite">Color all seven regions, then check your map.</div>
+          </section>
+        </div>
+      </section>
     </section>
 
     <section id="successScreen" class="success-screen" hidden>
@@ -117,16 +185,17 @@
       <div class="certificate">
         <p class="certificate-kicker">CS 480/580 • Introduction to Artificial Intelligence</p>
         <div class="success-icon" aria-hidden="true">✓</div>
-        <h2>Constraint Satisfaction Problem Solved!</h2>
+        <h2>Two Constraint Satisfaction Problems Solved!</h2>
         <p class="certificate-copy">This certifies that</p>
         <p id="certificateName" class="certificate-name"></p>
-        <p class="certificate-copy">successfully completed the <strong>CSP Scheduling Challenge</strong> by creating a complete and consistent assignment.</p>
+        <p class="certificate-copy">successfully completed the <strong>Scheduling and Australia Map-Coloring Challenge</strong> by creating two complete and consistent assignments.</p>
         <div class="certificate-details">
           <div><span>Completed</span><strong id="completionDate"></strong></div>
           <div><span>Time used</span><strong id="completionTime"></strong></div>
           <div><span>Schedule</span><strong id="finalSchedule"></strong></div>
+          <div><span>Map coloring</span><strong id="finalMapColoring"></strong></div>
         </div>
-        <p class="certificate-note">Every variable has a value, and every constraint is satisfied.</p>
+        <p class="certificate-note">In both problems, every variable has a value and every constraint is satisfied.</p>
         <p id="recordStatus" class="record-status"></p>
       </div>
       <div class="success-actions">
@@ -135,7 +204,7 @@
       </div>
     </section>
   </main>
-  <script src="config.js?v=20260929-5"></script>
-  <script src="script.js?v=20260929-5"></script>
+  <script src="config.js?v=20260930-6"></script>
+  <script src="script.js?v=20260930-6"></script>
 </body>
 </html>

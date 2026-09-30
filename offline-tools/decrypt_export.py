@@ -39,7 +39,7 @@ def main():
         record["receivedAt"] = row.get("received_at", "")
         decrypted.append(record)
 
-    fields = ["name", "completedAt", "completedAtLocal", "elapsedSeconds", "schedule", "receivedAt"]
+    fields = ["name", "completedAt", "completedAtLocal", "elapsedSeconds", "schedule", "mapColoring", "receivedAt"]
     with Path(args.output).open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()

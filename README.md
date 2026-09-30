@@ -1,14 +1,14 @@
-# CSP Scheduling Challenge
+# Two-Part CSP Challenge
 
-A browser-based drag-and-drop game for introducing constraint satisfaction problems (CSPs). The public game is hosted on GitHub Pages. An optional Cloudflare Worker and D1 database provide anonymous visitor counts and encrypted completion records.
+A browser-based game for introducing constraint satisfaction problems (CSPs) through employee scheduling and Australia map coloring. The public game is hosted on GitHub Pages. An optional Cloudflare Worker and D1 database provide anonymous visitor counts and encrypted completion records.
 
 ## What students do
 
 1. Enter their name.
-2. Assign Employees A–E to Shifts 1–5.
-3. Check the schedule against five constraints.
-4. Revise any inconsistent assignment.
-5. Receive a personalized success screen showing their name, completion date/time, elapsed time, and valid schedule.
+2. Assign Employees A–E to Shifts 1–5 and satisfy all scheduling constraints.
+3. Color the seven Australian regions with red, green, or blue so adjacent regions differ.
+4. Revise any inconsistent assignment or map coloring.
+5. Receive a personalized success screen showing their name, completion date/time, elapsed time, valid schedule, and valid map coloring.
 
 Students can drag cards or use the click-an-employee, click-a-shift alternative. The page is responsive and works on phones, tablets, and computers.
 
@@ -26,7 +26,7 @@ Then visit `http://localhost:8000`.
 
 ## Privacy and consent
 
-Before beginning, students must consent to the collection of their completion information. The browser encrypts the student's name, completion date/time, elapsed time, and schedule with the instructor's public key before transmission. Cloudflare stores only ciphertext and cannot decrypt those details. The private key stays offline with the instructor.
+Before beginning, students must consent to the collection of their completion information. The browser encrypts the student's name, completion date/time, elapsed time, schedule, and map coloring with the instructor's public key before transmission. Cloudflare stores only ciphertext and cannot decrypt those details. The private key stays offline with the instructor.
 
 After a student accepts the consent notice and starts the game, the site uses a random identifier stored in that browser to estimate unique visitors. It does not intentionally store IP addresses in the application database. The public page reveals only aggregate visitor and completion totals.
 
@@ -100,7 +100,7 @@ You need a free Cloudflare account and Node.js installed.
    `https://YOUR-USERNAME.github.io/csp-scheduling-game/`
 8. Share that address with students or place it in Canvas.
 
-After uploading an updated version, allow GitHub Pages a minute or two to redeploy. If an older version still appears, use a hard refresh (`Ctrl+Shift+R` on Windows or `Cmd+Shift+R` on macOS). The included version query strings also force browsers to retrieve the current five-employee files.
+After uploading an updated version, allow GitHub Pages a minute or two to redeploy. If an older version still appears, use a hard refresh (`Ctrl+Shift+R` on Windows or `Cmd+Shift+R` on macOS). The included version query strings also force browsers to retrieve the current two-question files.
 
 ## Download the encrypted completion file
 
@@ -152,3 +152,12 @@ Edit the rule text in `index.html`, then update the matching conditions in the `
 - D and E cannot work adjacent shifts.
 
 These rules have one valid schedule: **D→1, C→2, A→3, E→4, B→5**. The solution is intentionally not alphabetical, and students must combine ordering, immediacy, and non-adjacency constraints.
+
+## Australia map-coloring rules
+
+- Color WA, NT, SA, QLD, NSW, VIC, and TAS.
+- Use only red, green, or blue.
+- Regions sharing a land border must have different colors.
+- Tasmania has no land-border constraint and may use any available color.
+
+The game accepts every coloring that satisfies the constraints; it does not require one predetermined pattern.

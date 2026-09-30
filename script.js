@@ -18,6 +18,14 @@ const resetButton = document.querySelector("#resetButton");
 const visitCount = document.querySelector("#visitCount");
 const playCount = document.querySelector("#playCount");
 const recordStatus = document.querySelector("#recordStatus");
+const schedulingQuestion = document.querySelector("#schedulingQuestion");
+const mapQuestion = document.querySelector("#mapQuestion");
+const questionProgress = document.querySelector("#questionProgress");
+const mapRegions = [...document.querySelectorAll(".map-region")];
+const colorSwatches = [...document.querySelectorAll(".color-swatch")];
+const mapFeedback = document.querySelector("#mapFeedback");
+const checkMapButton = document.querySelector("#checkMapButton");
+const resetMapButton = document.querySelector("#resetMapButton");
 const config = window.CSP_GAME_CONFIG || {};
 
 let activeCard = null;
@@ -26,6 +34,21 @@ let startTime = null;
 let timerInterval = null;
 let checks = 0;
 let studentName = "";
+let solvedSchedule = null;
+let selectedColor = null;
+let draggedColor = null;
+
+const MAP_COLORS = {
+  red: "#ef5350",
+  green: "#43a047",
+  blue: "#4285f4"
+};
+
+const MAP_ADJACENCIES = [
+  ["WA", "NT"], ["WA", "SA"], ["NT", "SA"], ["NT", "QLD"],
+  ["SA", "QLD"], ["SA", "NSW"], ["SA", "VIC"], ["QLD", "NSW"],
+  ["NSW", "VIC"]
+];
 
 function apiConfigured() {
   return typeof config.API_BASE_URL === "string" &&
@@ -289,8 +312,16 @@ checkButton.addEventListener("click", () => {
   }
 
   setFeedback("Excellent—your assignment is complete and consistent!", "good");
-  window.setTimeout(() => showSuccess(assignments), 600);
+  solvedSchedule = { ...assignments };
+  window.setTimeout(showMapQuestion, 650);
 });
+
+function showMapQuestion() {
+  schedulingQuestion.hidden = true;
+  mapQuestion.hidden = false;
+  questionProgress.textContent = "Question 2 of 2";
+  mapQuestion.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 function resetSchedule() {
   employeeCards.forEach((card) => employeeBank.querySelector(".bank-cards").append(card));
@@ -303,7 +334,116 @@ function resetSchedule() {
 
 resetButton.addEventListener("click", resetSchedule);
 
-async function showSuccess(assignments) {
+function setMapFeedback(message, type = "") {
+  mapFeedback.textContent = message;
+  mapFeedback.className = `feedback${type ? ` ${type}` : ""}`;
+}
+
+function chooseColor(color) {
+  selectedColor = color;
+  colorSwatches.forEach((swatch) => {
+    swatch.classList.toggle("selected", swatch.dataset.color === color);
+    swatch.setAttribute("aria-pressed", String(swatch.dataset.color === color));
+  });
+}
+
+function applyColor(regionElement, color) {
+  if (!regionElement || !MAP_COLORS[color]) return;
+  regionElement.dataset.color = color;
+  regionElement.querySelector("polygon").style.fill = MAP_COLORS[color];
+  regionElement.classList.remove("conflict");
+  regionElement.setAttribute("aria-label", `${regionElement.dataset.region}, colored ${color}`);
+  setMapFeedback("Map changed. Color every region, then check your map.");
+}
+
+colorSwatches.forEach((swatch) => {
+  swatch.setAttribute("aria-pressed", "false");
+  swatch.addEventListener("click", () => chooseColor(swatch.dataset.color));
+  swatch.addEventListener("dragstart", (event) => {
+    draggedColor = swatch.dataset.color;
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("text/plain", draggedColor);
+  });
+  swatch.addEventListener("dragend", () => { draggedColor = null; });
+});
+
+mapRegions.forEach((region) => {
+  region.addEventListener("click", () => {
+    if (selectedColor) applyColor(region, selectedColor);
+    else setMapFeedback("Choose a color first, then select a region.", "error");
+  });
+  region.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && selectedColor) {
+      event.preventDefault();
+      applyColor(region, selectedColor);
+    }
+  });
+  region.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    region.classList.add("drag-over");
+  });
+  region.addEventListener("dragleave", () => region.classList.remove("drag-over"));
+  region.addEventListener("drop", (event) => {
+    event.preventDefault();
+    region.classList.remove("drag-over");
+    const color = event.dataTransfer.getData("text/plain") || draggedColor;
+    applyColor(region, color);
+  });
+});
+
+function getMapColoring() {
+  return Object.fromEntries(mapRegions.map((region) => [region.dataset.region, region.dataset.color || ""]));
+}
+
+function evaluateMap(coloring) {
+  const incomplete = Object.entries(coloring).filter(([, color]) => !color).map(([region]) => region);
+  const conflicts = MAP_ADJACENCIES.filter(([first, second]) => coloring[first] && coloring[first] === coloring[second]);
+  return { incomplete, conflicts };
+}
+
+function resetMap() {
+  selectedColor = null;
+  draggedColor = null;
+  colorSwatches.forEach((swatch) => {
+    swatch.classList.remove("selected");
+    swatch.setAttribute("aria-pressed", "false");
+  });
+  mapRegions.forEach((region) => {
+    delete region.dataset.color;
+    region.classList.remove("conflict", "drag-over");
+    region.querySelector("polygon").style.removeProperty("fill");
+    region.setAttribute("aria-label", `${region.dataset.region}, not colored`);
+  });
+  setMapFeedback("Color all seven regions, then check your map.");
+}
+
+resetMapButton.addEventListener("click", resetMap);
+
+checkMapButton.addEventListener("click", () => {
+  checks += 1;
+  attemptCount.textContent = String(checks);
+  mapRegions.forEach((region) => region.classList.remove("conflict"));
+  const coloring = getMapColoring();
+  const results = evaluateMap(coloring);
+
+  if (results.incomplete.length) {
+    setMapFeedback(`Color every region first. Still missing: ${results.incomplete.join(", ")}.`, "error");
+    return;
+  }
+
+  if (results.conflicts.length) {
+    const names = new Set(results.conflicts.flat());
+    mapRegions.filter((region) => names.has(region.dataset.region)).forEach((region) => region.classList.add("conflict"));
+    const pairs = results.conflicts.map(([first, second]) => `${first}–${second}`).join(", ");
+    setMapFeedback(`Not consistent yet. These neighboring regions share a color: ${pairs}.`, "error");
+    return;
+  }
+
+  setMapFeedback("Excellent—every region is colored and all neighboring regions differ!", "good");
+  window.setTimeout(() => showSuccess(solvedSchedule, coloring), 650);
+});
+
+async function showSuccess(assignments, coloring) {
   window.clearInterval(timerInterval);
   const elapsed = Date.now() - startTime;
   const completedAt = new Date();
@@ -311,11 +451,15 @@ async function showSuccess(assignments) {
     .sort(([, shiftA], [, shiftB]) => shiftA - shiftB)
     .map(([employee, shift]) => `${employee}→${shift}`)
     .join(", ");
+  const mapColoring = ["WA", "NT", "SA", "QLD", "NSW", "VIC", "TAS"]
+    .map((region) => `${region}→${coloring[region][0].toUpperCase()}`)
+    .join(", ");
 
   document.querySelector("#certificateName").textContent = studentName;
   document.querySelector("#completionDate").textContent = completedAt.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
   document.querySelector("#completionTime").textContent = formatElapsed(elapsed);
   document.querySelector("#finalSchedule").textContent = scheduleByShift;
+  document.querySelector("#finalMapColoring").textContent = mapColoring;
   recordStatus.textContent = "Securely recording this completion…";
   gameScreen.hidden = true;
   successScreen.hidden = false;
@@ -327,7 +471,8 @@ async function showSuccess(assignments) {
       completedAt: completedAt.toISOString(),
       completedAtLocal: completedAt.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
       elapsedSeconds: Math.max(0, Math.floor(elapsed / 1000)),
-      schedule: scheduleByShift
+      schedule: scheduleByShift,
+      mapColoring
     });
     recordStatus.textContent = "✓ Your encrypted completion record was saved successfully.";
     await refreshStats();
@@ -339,12 +484,17 @@ async function showSuccess(assignments) {
 document.querySelector("#printButton").addEventListener("click", () => window.print());
 document.querySelector("#playAgainButton").addEventListener("click", () => {
   resetSchedule();
+  resetMap();
+  solvedSchedule = null;
   checks = 0;
   attemptCount.textContent = "0";
   startTime = Date.now();
   timerInterval = window.setInterval(updateTimer, 1000);
   successScreen.hidden = true;
   gameScreen.hidden = false;
+  schedulingQuestion.hidden = false;
+  mapQuestion.hidden = true;
+  questionProgress.textContent = "Question 1 of 2";
   updateTimer();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
